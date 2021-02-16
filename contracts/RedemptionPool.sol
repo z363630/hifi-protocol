@@ -199,7 +199,9 @@ contract RedemptionPool is
     struct InjectLiquidityLocalVars {
         MathError mathErr;
         uint256 fyTokenAmount;
-        uint256 newUnderlyingAmount;
+        uint256 underlyingAmountTotal;
+        uint256 poolTokenAmountTotal;
+        uint256 fyTokenAmountTotal;
         uint256 underlyingPrecisionScalar;
         uint256 poolShare;
         uint256 fyTokenAmountScaled;
@@ -209,6 +211,7 @@ contract RedemptionPool is
         uint256 bpRatioScaled;
         uint256 poolTokenAmountScaled;
         uint256 poolTokenAmount;
+        uint256 underlyingAmountReal;
         uint256[] maxAmountsIn;
     }
 
@@ -241,11 +244,6 @@ contract RedemptionPool is
         /* Checks: the zero edge case. */
         require(underlyingAmount > 0, "ERR_INJECT_LIQUIDITY_ZERO");
 
-        /* Effects: update storage. */
-        (vars.mathErr, vars.newUnderlyingAmount) = addUInt(lpPositions[msg.sender].underlyingAmount, underlyingAmount);
-        require(vars.mathErr == MathError.NO_ERROR, "ERR_INJECT_LIQUIDITY_MATH_ERROR");
-        lpPositions[msg.sender].underlyingAmount = vars.newUnderlyingAmount;
-
         /**
          * fyTokens always have 18 decimals so the underlying amount needs to be upscaled.
          * If the precision scalar is 1, it means that the underlying also has 18 decimals.
@@ -276,11 +274,16 @@ contract RedemptionPool is
             bp.bind(address(fyToken.underlying()), underlyingAmount, 25000000000000000000);
             bp.bind(address(fyToken), vars.fyTokenAmount, 25000000000000000000);
 
-            /* Effects: finalize pool (set as public). */
+            /* Effects: finalize pool (set as public) and mint pool tokens to caller. */
             bp.finalize();
 
             /* Effects: update storage. */
-            lpPositions[msg.sender].poolTokenAmount = bPool.balanceOf(address(this));
+            lpPositions[msg.sender].underlyingAmountTotal = underlyingAmount;
+
+            /* Effects: update storage. */
+            lpPositions[msg.sender].poolTokenAmountTotal = bPool.balanceOf(address(this));
+
+            emit InjectLiquidity(msg.sender, underlyingAmount, bPool.balanceOf(address(this)));
 
             /* Effects: update storage. */
             bPool = bp;
@@ -323,11 +326,34 @@ contract RedemptionPool is
             vars.maxAmountsIn[0] = type(uint256).max;
             vars.maxAmountsIn[1] = type(uint256).max;
 
+            vars.underlyingAmountReal = fyToken.underlying().balanceOf(address(this));
+
             /* Effects: provide liquidity to `underlying:fyToken` Balancer pool. */
             bPool.joinPool(vars.poolTokenAmount, vars.maxAmountsIn);
 
+            (vars.mathErr, vars.underlyingAmountReal) = subUInt(
+                vars.underlyingAmountReal,
+                fyToken.underlying().balanceOf(address(this))
+            );
+            require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
+
             /* Effects: update storage. */
-            lpPositions[msg.sender].poolTokenAmount = vars.poolTokenAmount;
+            (vars.mathErr, vars.underlyingAmountTotal) = addUInt(
+                lpPositions[msg.sender].underlyingAmountTotal,
+                vars.underlyingAmountReal
+            );
+            require(vars.mathErr == MathError.NO_ERROR, "ERR_INJECT_LIQUIDITY_MATH_ERROR");
+            lpPositions[msg.sender].underlyingAmountTotal = vars.underlyingAmountTotal;
+
+            /* Effects: update storage. */
+            (vars.mathErr, vars.poolTokenAmountTotal) = addUInt(
+                lpPositions[msg.sender].poolTokenAmountTotal,
+                vars.poolTokenAmount
+            );
+            require(vars.mathErr == MathError.NO_ERROR, "ERR_INJECT_LIQUIDITY_MATH_ERROR");
+            lpPositions[msg.sender].poolTokenAmountTotal = vars.poolTokenAmountTotal;
+
+            emit InjectLiquidity(msg.sender, vars.underlyingAmountReal, vars.poolTokenAmount);
 
             /* Interactions: burn all leftover fyTokens. */
             if (fyToken.balanceOf(address(this)) > 0) {
@@ -337,8 +363,6 @@ contract RedemptionPool is
                 );
             }
         }
-
-        emit InjectLiquidity(msg.sender, underlyingAmount, vars.poolTokenAmount);
 
         return true;
     }
@@ -373,7 +397,10 @@ contract RedemptionPool is
         require(poolTokenAmount > 0, "EXTRACT_LIQUIDITY_ZERO");
 
         /* Checks: the insufficient position case. */
-        require(poolTokenAmount <= lpPositions[msg.sender].poolTokenAmount, "EXTRACT_LIQUIDITY_INSUFFICIENT_POSITION");
+        require(
+            poolTokenAmount <= lpPositions[msg.sender].poolTokenAmountTotal,
+            "EXTRACT_LIQUIDITY_INSUFFICIENT_POSITION"
+        );
 
         vars.minAmountsOut[0] = 0;
         vars.minAmountsOut[1] = 0;
@@ -382,17 +409,21 @@ contract RedemptionPool is
 
         bPool.exitPool(poolTokenAmount, vars.minAmountsOut);
 
-        (vars.mathErr, vars.underlyingAmountReal) = subUInt(
-            vars.underlyingAmountReal,
-            fyToken.underlying().balanceOf(address(this))
+        (vars.mathErr, lpPositions[msg.sender].poolTokenAmountTotal) = subUInt(
+            lpPositions[msg.sender].poolTokenAmountTotal,
+            poolTokenAmount
         );
         require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
 
-        fyToken.underlying().transfer(msg.sender, vars.underlyingAmountReal);
+        (vars.mathErr, vars.underlyingAmountReal) = subUInt(
+            fyToken.underlying().balanceOf(address(this)),
+            vars.underlyingAmountReal
+        );
+        require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
 
-        if (vars.underlyingAmountReal < lpPositions[msg.sender].underlyingAmount) {
+        if (vars.underlyingAmountReal < lpPositions[msg.sender].underlyingAmountTotal) {
             (vars.mathErr, vars.fyTokenAmountRepay) = subUInt(
-                lpPositions[msg.sender].underlyingAmount,
+                lpPositions[msg.sender].underlyingAmountTotal,
                 vars.underlyingAmountReal
             );
             require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
@@ -403,9 +434,15 @@ contract RedemptionPool is
             require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
 
             fyToken.transfer(msg.sender, vars.fyTokenAmountRepay);
+        } else if (vars.underlyingAmountReal >= lpPositions[msg.sender].underlyingAmountTotal) {
+            fyToken.underlying().transfer(msg.sender, lpPositions[msg.sender].underlyingAmountTotal);
+
+            lpPositions[msg.sender].underlyingAmountTotal = 0;
         }
 
         require(fyToken.burn(address(this), fyToken.balanceOf(address(this))), "ERR_EXTRACT_LIQUIDITY_CALL_BURN");
+
+        emit ExtractLiquidity(msg.sender, vars.underlyingAmountReal, poolTokenAmount);
 
         return true;
     }

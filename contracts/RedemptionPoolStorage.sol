@@ -36,8 +36,8 @@ abstract contract RedemptionPoolStorage {
     bool public isLPAdminLocked = true;
 
     struct LPPosition {
-        uint256 underlyingAmount;
-        uint256 poolTokenAmount;
+        uint256 underlyingAmountTotal;
+        uint256 poolTokenAmountTotal;
     }
 
     /**
