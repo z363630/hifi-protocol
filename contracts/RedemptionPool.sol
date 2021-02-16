@@ -371,6 +371,8 @@ contract RedemptionPool is
         MathError mathErr;
         uint256 fyTokenAmount;
         uint256 fyTokenAmountRepay;
+        uint256 poolTokenAmountTotal;
+        uint256 underlyingAmountTotal;
         uint256 underlyingAmountReal;
         uint256 underlyingPrecisionScalar;
         uint256[] minAmountsOut;
@@ -409,11 +411,12 @@ contract RedemptionPool is
 
         bPool.exitPool(poolTokenAmount, vars.minAmountsOut);
 
-        (vars.mathErr, lpPositions[msg.sender].poolTokenAmountTotal) = subUInt(
+        (vars.mathErr, vars.poolTokenAmountTotal) = subUInt(
             lpPositions[msg.sender].poolTokenAmountTotal,
             poolTokenAmount
         );
         require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
+        lpPositions[msg.sender].poolTokenAmountTotal = vars.poolTokenAmountTotal;
 
         (vars.mathErr, vars.underlyingAmountReal) = subUInt(
             fyToken.underlying().balanceOf(address(this)),
@@ -433,14 +436,19 @@ contract RedemptionPool is
             (vars.mathErr, vars.fyTokenAmountRepay) = mulUInt(vars.fyTokenAmountRepay, vars.underlyingPrecisionScalar);
             require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
 
-            fyToken.transfer(msg.sender, vars.fyTokenAmountRepay);
+            // Mint instead of transfer even though there are excess tokens in this case to avoid math issues
+            /* Interactions: mint the fyTokens. */
+            require(fyToken.mint(address(msg.sender), vars.fyTokenAmount), "ERR_INJECT_LIQUIDITY_CALL_MINT");
         } else if (vars.underlyingAmountReal >= lpPositions[msg.sender].underlyingAmountTotal) {
             fyToken.underlying().transfer(msg.sender, lpPositions[msg.sender].underlyingAmountTotal);
 
             lpPositions[msg.sender].underlyingAmountTotal = 0;
         }
 
-        require(fyToken.burn(address(this), fyToken.balanceOf(address(this))), "ERR_EXTRACT_LIQUIDITY_CALL_BURN");
+        /* Interactions: burn all leftover fyTokens. */
+        if (fyToken.balanceOf(address(this)) > 0) {
+            require(fyToken.burn(address(this), fyToken.balanceOf(address(this))), "ERR_EXTRACT_LIQUIDITY_CALL_BURN");
+        }
 
         emit ExtractLiquidity(msg.sender, vars.underlyingAmountReal, poolTokenAmount);
 
