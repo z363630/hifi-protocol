@@ -6,6 +6,10 @@ pragma solidity ^0.7.0;
  * @author Hifi
  */
 interface BPoolInterface {
+    function totalSupply() external view returns (uint256);
+
+    function balanceOf(address whom) external view returns (uint);
+
     function isPublicSwap() external view returns (bool);
 
     function isFinalized() external view returns (bool);

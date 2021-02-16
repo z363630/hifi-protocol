@@ -15,7 +15,7 @@ abstract contract RedemptionPoolInterface is RedemptionPoolStorage {
 
     function supplyUnderlying(uint256 underlyingAmount) external virtual returns (bool);
 
-    function setAdminLock(bool newLock) external virtual returns (bool);
+    function setLPAdminLock(bool newLock) external virtual returns (bool);
 
     function injectLiquidity(uint256 underlyingAmount) external virtual returns (bool);
 

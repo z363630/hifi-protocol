@@ -33,11 +33,11 @@ abstract contract RedemptionPoolStorage {
     /**
      * @notice Indicator that calling LP functionality is exclusive to RedemptionPool admin.
      */
-    bool public isAdminLocked = true;
+    bool public isLPAdminLocked = true;
 
     struct LPPosition {
         uint256 underlyingAmount;
-        uint256 poolShare;
+        uint256 poolTokenAmount;
     }
 
     /**
@@ -49,6 +49,11 @@ abstract contract RedemptionPoolStorage {
      * @notice Bookkeeping to keep track of all liquidity providers and how much underlying tokens each has provided.
      */
     mapping(address => LPPosition) public lpPositions;
+
+    /**
+     * @notice The Balancer pool token amount ratio scale.
+     */
+    uint256 public constant RATIO_SCALE = 1e12;
 
     /**
      * @notice The Balancer Factory contract.
