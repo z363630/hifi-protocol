@@ -323,6 +323,7 @@ contract RedemptionPool is
             (vars.mathErr, vars.poolTokenAmount) = divUInt(vars.poolTokenAmountScaled, RATIO_SCALE);
             require(vars.mathErr == MathError.NO_ERROR, "ERR_INJECT_LIQUIDITY_MATH_ERROR");
 
+            vars.maxAmountsIn = new uint256[](2);
             vars.maxAmountsIn[0] = type(uint256).max;
             vars.maxAmountsIn[1] = type(uint256).max;
 
@@ -404,6 +405,7 @@ contract RedemptionPool is
             "EXTRACT_LIQUIDITY_INSUFFICIENT_POSITION"
         );
 
+        vars.minAmountsOut = new uint256[](2);
         vars.minAmountsOut[0] = 0;
         vars.minAmountsOut[1] = 0;
 
