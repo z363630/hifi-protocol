@@ -288,6 +288,9 @@ contract RedemptionPool is
             /* Effects: update storage. */
             bPool = bp;
         } else {
+            /* Fails when trying to inject liquidity after all liquidity is extracted from the pool */
+            require(bPool.balanceOf(address(this)) > 0, "ERR_INJECT_LIQUIDITY_EMPTY");
+
             /* Effects: absorb any tokens that may have been sent to the Balancer pool contract. */
             // TODO: determine if that is really necessary or if it opens up an attack vector
             bPool.gulp(address(fyToken.underlying()));
@@ -336,7 +339,7 @@ contract RedemptionPool is
                 vars.underlyingAmountReal,
                 fyToken.underlying().balanceOf(address(this))
             );
-            require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
+            require(vars.mathErr == MathError.NO_ERROR, "ERR_INJECT_LIQUIDITY_MATH_ERROR");
 
             /* Effects: update storage. */
             (vars.mathErr, vars.underlyingAmountTotal) = addUInt(
