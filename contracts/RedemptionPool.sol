@@ -281,9 +281,9 @@ contract RedemptionPool is
             lpPositions[msg.sender].underlyingAmountTotal = underlyingAmount;
 
             /* Effects: update storage. */
-            lpPositions[msg.sender].poolTokenAmountTotal = bPool.balanceOf(address(this));
+            lpPositions[msg.sender].poolTokenAmountTotal = bp.balanceOf(address(this));
 
-            emit InjectLiquidity(msg.sender, underlyingAmount, bPool.balanceOf(address(this)));
+            emit InjectLiquidity(msg.sender, underlyingAmount, bp.balanceOf(address(this)));
 
             /* Effects: update storage. */
             bPool = bp;
