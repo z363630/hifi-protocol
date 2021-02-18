@@ -443,7 +443,7 @@ contract RedemptionPool is
 
             // Mint instead of transfer even though there are excess tokens in this case to avoid math issues
             /* Interactions: mint the fyTokens. */
-            require(fyToken.mint(address(msg.sender), vars.fyTokenAmount), "ERR_INJECT_LIQUIDITY_CALL_MINT");
+            require(fyToken.mint(address(msg.sender), vars.fyTokenAmountRepay), "ERR_INJECT_LIQUIDITY_CALL_MINT");
         } else if (vars.underlyingAmountReal >= lpPositions[msg.sender].underlyingAmountTotal) {
             fyToken.underlying().transfer(msg.sender, lpPositions[msg.sender].underlyingAmountTotal);
 
