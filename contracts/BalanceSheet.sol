@@ -12,6 +12,8 @@ import "./FintrollerInterface.sol";
 import "./FyTokenInterface.sol";
 import "./oracles/ChainlinkOperatorInterface.sol";
 
+import "./utils/ArrayUtils.sol";
+
 /**
  * @title BalanceSheet
  * @author Hifi
@@ -66,10 +68,11 @@ contract BalanceSheet is
      * - `repayAmount` must be non-zero.
      *
      * @param fyToken The fyToken to make the query against.
+     * @param collateral The collateral used to borrow.
      * @param repayAmount The amount of fyTokens to repay.
      * @return The amount of clutchable collateral as uint256, specified in the collateral's decimal system.
      */
-    function getClutchableCollateral(FyTokenInterface fyToken, uint256 repayAmount)
+    function getClutchableCollateral(FyTokenInterface fyToken, address collateral, uint256 repayAmount)
         external
         view
         override
@@ -90,8 +93,13 @@ contract BalanceSheet is
         ChainlinkOperatorInterface oracle = fintroller.oracle();
         vars.underlyingPriceUpscaled = oracle.getAdjustedPrice(fyToken.underlying().symbol());
 
+        require(
+            ArrayUtils.includes(fyToken.getCollaterals(), Erc20Interface(collateral)),
+            "ERR_GET_CLUTCHABLE_COLLATERAL_WRONG_COLLATERAL"
+        );
+
         /* Grab the upscaled USD price of the collateral. */
-        vars.collateralPriceUpscaled = oracle.getAdjustedPrice(fyToken.collateral().symbol());
+        vars.collateralPriceUpscaled = oracle.getAdjustedPrice(Erc20Interface(collateral).symbol());
 
         /* Calculate the top part of the equation. */
         (vars.mathErr, vars.numerator) = mulExp3(
@@ -109,7 +117,7 @@ contract BalanceSheet is
         require(vars.mathErr == MathError.NO_ERROR, "ERR_GET_CLUTCHABLE_COLLATERAL_MATH_ERROR");
 
         /* If the precision scalar is not 1, calculate the final form of the clutched collateral amount. */
-        vars.collateralPrecisionScalar = fyToken.collateralPrecisionScalar();
+        vars.collateralPrecisionScalar = fyToken.collateralPrecisionScalars(Erc20Interface(collateral));
         if (vars.collateralPrecisionScalar != 1) {
             (vars.mathErr, vars.clutchableCollateralAmount) = divUInt(
                 vars.clutchableCollateralAmountUpscaled.mantissa,
@@ -136,7 +144,13 @@ contract BalanceSheet is
         returns (uint256)
     {
         Vault memory vault = vaults[address(fyToken)][borrower];
-        return getHypotheticalCollateralizationRatio(fyToken, borrower, vault.lockedCollateral, vault.debt);
+        return getHypotheticalCollateralizationRatio(
+            fyToken,
+            borrower,
+            vault.collateralUsed,
+            vault.lockedCollateral,
+            vault.debt
+        );
     }
 
     struct GetHypotheticalAccountLiquidityLocalVars {
@@ -175,6 +189,7 @@ contract BalanceSheet is
     function getHypotheticalCollateralizationRatio(
         FyTokenInterface fyToken,
         address borrower,
+        address collateral,
         uint256 lockedCollateral,
         uint256 debt
     ) public view override returns (uint256) {
@@ -191,13 +206,13 @@ contract BalanceSheet is
 
         /* Grab the upscaled USD price of the collateral. */
         ChainlinkOperatorInterface oracle = fintroller.oracle();
-        vars.collateralPriceUpscaled = oracle.getAdjustedPrice(fyToken.collateral().symbol());
+        vars.collateralPriceUpscaled = oracle.getAdjustedPrice(Erc20Interface(collateral).symbol());
 
         /* Grab the upscaled USD price of the underlying. */
         vars.underlyingPriceUpscaled = oracle.getAdjustedPrice(fyToken.underlying().symbol());
 
         /* Upscale the collateral, which can have any precision, to mantissa precision. */
-        vars.collateralPrecisionScalar = fyToken.collateralPrecisionScalar();
+        vars.collateralPrecisionScalar = fyToken.collateralPrecisionScalars(Erc20Interface(collateral));
         if (vars.collateralPrecisionScalar != 1) {
             (vars.mathErr, vars.lockedCollateralUpscaled) = mulUInt(lockedCollateral, vars.collateralPrecisionScalar);
             require(vars.mathErr == MathError.NO_ERROR, "ERR_GET_HYPOTHETICAL_COLLATERALIZATION_RATIO_MATH_ERROR");
@@ -242,6 +257,7 @@ contract BalanceSheet is
         override
         returns (
             uint256,
+            address,
             uint256,
             uint256,
             bool
@@ -249,6 +265,7 @@ contract BalanceSheet is
     {
         return (
             vaults[address(fyToken)][borrower].debt,
+            vaults[address(fyToken)][borrower].collateralUsed,
             vaults[address(fyToken)][borrower].freeCollateral,
             vaults[address(fyToken)][borrower].lockedCollateral,
             vaults[address(fyToken)][borrower].isOpen
@@ -271,9 +288,12 @@ contract BalanceSheet is
         external
         view
         override
-        returns (uint256)
+        returns (address, uint256)
     {
-        return vaults[address(fyToken)][borrower].lockedCollateral;
+        return (
+            vaults[address(fyToken)][borrower].collateralUsed,
+            vaults[address(fyToken)][borrower].lockedCollateral
+        );
     }
 
     /**
@@ -342,9 +362,10 @@ contract BalanceSheet is
         vaults[address(fyToken)][borrower].lockedCollateral = newLockedCollateral;
 
         /* Interactions: transfer the collateral. */
-        fyToken.collateral().safeTransfer(liquidator, collateralAmount);
+        Erc20Interface collateral = Erc20Interface(vaults[address(fyToken)][borrower].collateralUsed);
+        collateral.safeTransfer(liquidator, collateralAmount);
 
-        emit ClutchCollateral(fyToken, liquidator, borrower, collateralAmount);
+        emit ClutchCollateral(fyToken, liquidator, borrower, address(collateral), collateralAmount);
 
         return true;
     }
@@ -365,7 +386,7 @@ contract BalanceSheet is
      * @param collateralAmount The amount of collateral to deposit.
      * @return bool true = success, otherwise it reverts.
      */
-    function depositCollateral(FyTokenInterface fyToken, uint256 collateralAmount)
+    function depositCollateral(FyTokenInterface fyToken, address collateral, uint256 collateralAmount)
         external
         override
         isVaultOpenForMsgSender(fyToken)
@@ -378,6 +399,19 @@ contract BalanceSheet is
         /* Checks: the Fintroller allows this action to be performed. */
         require(fintroller.getDepositCollateralAllowed(fyToken), "ERR_DEPOSIT_COLLATERAL_NOT_ALLOWED");
 
+        /* Checks: if this collateral can be used for this fyToken */
+        require(
+            ArrayUtils.includes(fyToken.getCollaterals(), Erc20Interface(collateral)),
+            "ERR_DEPOSIT_COLLATERAL_WRONG_COLLATERAL"
+        );
+
+        /* Checks: only one type of collateral can be deposited at a time */
+        require(
+            vaults[address(fyToken)][msg.sender].collateralUsed == address(0)
+            || vaults[address(fyToken)][msg.sender].collateralUsed == collateral,
+            "ERR_DEPOSIT_COLLATERAL_WRONG_TYPE"
+        );
+
         /* Effects: update storage. */
         MathError mathErr;
         uint256 hypotheticalFreeCollateral;
@@ -388,10 +422,15 @@ contract BalanceSheet is
         require(mathErr == MathError.NO_ERROR, "ERR_DEPOSIT_COLLATERAL_MATH_ERROR");
         vaults[address(fyToken)][msg.sender].freeCollateral = hypotheticalFreeCollateral;
 
-        /* Interactions: perform the Erc20 transfer. */
-        fyToken.collateral().safeTransferFrom(msg.sender, address(this), collateralAmount);
+        /* Interactions: saves the type of collateral */
+        if (vaults[address(fyToken)][msg.sender].collateralUsed == address(0)) {
+            vaults[address(fyToken)][msg.sender].collateralUsed = collateral;
+        }
 
-        emit DepositCollateral(fyToken, msg.sender, collateralAmount);
+        /* Interactions: perform the Erc20 transfer. */
+        Erc20Interface(collateral).safeTransferFrom(msg.sender, address(this), collateralAmount);
+
+        emit DepositCollateral(fyToken, msg.sender, collateral, collateralAmount);
 
         return true;
     }
@@ -443,6 +482,7 @@ contract BalanceSheet is
             vars.hypotheticalCollateralizationRatioMantissa = getHypotheticalCollateralizationRatio(
                 fyToken,
                 msg.sender,
+                vault.collateralUsed,
                 vars.newLockedCollateral,
                 vault.debt
             );
@@ -459,7 +499,7 @@ contract BalanceSheet is
         require(vars.mathErr == MathError.NO_ERROR, "ERR_FREE_COLLATERAL_MATH_ERROR");
         vaults[address(fyToken)][msg.sender].freeCollateral = vars.newFreeCollateral;
 
-        emit FreeCollateral(fyToken, msg.sender, collateralAmount);
+        emit FreeCollateral(fyToken, msg.sender, vault.collateralUsed, collateralAmount);
 
         return true;
     }
@@ -502,7 +542,7 @@ contract BalanceSheet is
         assert(mathErr == MathError.NO_ERROR);
         vaults[address(fyToken)][msg.sender].freeCollateral = hypotheticalFreeCollateral;
 
-        emit LockCollateral(fyToken, msg.sender, collateralAmount);
+        emit LockCollateral(fyToken, msg.sender, vault.collateralUsed, collateralAmount);
 
         return true;
     }
@@ -598,9 +638,14 @@ contract BalanceSheet is
         vaults[address(fyToken)][msg.sender].freeCollateral = newFreeCollateral;
 
         /* Interactions: perform the Erc20 transfer. */
-        fyToken.collateral().safeTransfer(msg.sender, collateralAmount);
+        Erc20Interface(vaults[address(fyToken)][msg.sender].collateralUsed).safeTransfer(msg.sender, collateralAmount);
 
-        emit WithdrawCollateral(fyToken, msg.sender, collateralAmount);
+        emit WithdrawCollateral(
+            fyToken,
+            msg.sender,
+            vaults[address(fyToken)][msg.sender].collateralUsed,
+            collateralAmount
+        );
 
         return true;
     }

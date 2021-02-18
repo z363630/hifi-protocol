@@ -11,7 +11,7 @@ abstract contract BalanceSheetInterface is BalanceSheetStorage {
     /**
      * CONSTANT FUNCTIONS
      */
-    function getClutchableCollateral(FyTokenInterface fyToken, uint256 repayAmount)
+    function getClutchableCollateral(FyTokenInterface fyToken, address collateralUsed, uint256 repayAmount)
         external
         view
         virtual
@@ -26,6 +26,7 @@ abstract contract BalanceSheetInterface is BalanceSheetStorage {
     function getHypotheticalCollateralizationRatio(
         FyTokenInterface fyToken,
         address borrower,
+        address collateralused,
         uint256 lockedCollateral,
         uint256 debt
     ) public view virtual returns (uint256);
@@ -36,6 +37,7 @@ abstract contract BalanceSheetInterface is BalanceSheetStorage {
         virtual
         returns (
             uint256,
+            address,
             uint256,
             uint256,
             bool
@@ -47,7 +49,7 @@ abstract contract BalanceSheetInterface is BalanceSheetStorage {
         external
         view
         virtual
-        returns (uint256);
+        returns (address, uint256);
 
     function isAccountUnderwater(FyTokenInterface fyToken, address borrower) external view virtual returns (bool);
 
@@ -64,7 +66,11 @@ abstract contract BalanceSheetInterface is BalanceSheetStorage {
         uint256 clutchedCollateralAmount
     ) external virtual returns (bool);
 
-    function depositCollateral(FyTokenInterface fyToken, uint256 collateralAmount) external virtual returns (bool);
+    function depositCollateral(
+        FyTokenInterface fyToken,
+        address collateral,
+        uint256 collateralAmount
+    ) external virtual returns (bool);
 
     function freeCollateral(FyTokenInterface fyToken, uint256 collateralAmount) external virtual returns (bool);
 
@@ -88,18 +94,39 @@ abstract contract BalanceSheetInterface is BalanceSheetStorage {
         FyTokenInterface indexed fyToken,
         address indexed liquidator,
         address indexed borrower,
+        address collateral,
         uint256 clutchedCollateralAmount
     );
 
-    event DepositCollateral(FyTokenInterface indexed fyToken, address indexed borrower, uint256 collateralAmount);
+    event DepositCollateral(
+        FyTokenInterface indexed fyToken,
+        address indexed borrower,
+        address collateral,
+        uint256 collateralAmount
+    );
 
-    event FreeCollateral(FyTokenInterface indexed fyToken, address indexed borrower, uint256 collateralAmount);
+    event FreeCollateral(
+        FyTokenInterface indexed fyToken,
+        address indexed borrower,
+        address collateral,
+        uint256 collateralAmount
+    );
 
-    event LockCollateral(FyTokenInterface indexed fyToken, address indexed borrower, uint256 collateralAmount);
+    event LockCollateral(
+        FyTokenInterface indexed fyToken,
+        address indexed borrower,
+        address collateral,
+        uint256 collateralAmount
+    );
 
     event OpenVault(FyTokenInterface indexed fyToken, address indexed borrower);
 
     event SetVaultDebt(FyTokenInterface indexed fyToken, address indexed borrower, uint256 oldDebt, uint256 newDebt);
 
-    event WithdrawCollateral(FyTokenInterface indexed fyToken, address indexed borrower, uint256 collateralAmount);
+    event WithdrawCollateral(
+        FyTokenInterface indexed fyToken,
+        address indexed borrower,
+        address collateral,
+        uint256 collateralAmount
+    );
 }

@@ -21,14 +21,14 @@ abstract contract FyTokenStorage {
     BalanceSheetInterface public balanceSheet;
 
     /**
-     * @notice The Erc20 asset that backs the borrows of this fyToken.
+     * @notice The Erc20 assets that backs the borrows of this fyToken.
      */
-    Erc20Interface public collateral;
+    Erc20Interface[] public collaterals;
 
     /**
-     * @notice The ratio between mantissa precision (1e18) and the collateral precision.
+     * @notice The ratio between mantissa precision (1e18) and the collateral precisions.
      */
-    uint256 public collateralPrecisionScalar;
+    mapping (Erc20Interface => uint256) public collateralPrecisionScalars;
 
     /**
      * @notice Unix timestamp in seconds for when this token expires.

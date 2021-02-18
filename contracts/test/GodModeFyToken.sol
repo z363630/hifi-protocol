@@ -17,8 +17,8 @@ contract GodModeFyToken is FyToken {
         FintrollerInterface fintroller_,
         BalanceSheetInterface balanceSheet_,
         Erc20Interface underlying_,
-        Erc20Interface collateral_
-    ) FyToken(name_, symbol_, expirationTime_, fintroller_, balanceSheet_, underlying_, collateral_) {}
+        Erc20Interface[] memory collaterals_
+    ) FyToken(name_, symbol_, expirationTime_, fintroller_, balanceSheet_, underlying_, collaterals_) {}
 
     function __godMode_mint(address beneficiary, uint256 mintAmount) external {
         mintInternal(beneficiary, mintAmount);

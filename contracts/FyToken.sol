@@ -42,7 +42,7 @@ contract FyToken is
      * @param fintroller_ The address of the Fintroller contract.
      * @param balanceSheet_ The address of the BalanceSheet contract.
      * @param underlying_ The contract address of the underlying asset.
-     * @param collateral_ The contract address of the collateral asset.
+     * @param collaterals_ The contract address of the collateral assets.
      */
     constructor(
         string memory name_,
@@ -51,7 +51,7 @@ contract FyToken is
         FintrollerInterface fintroller_,
         BalanceSheetInterface balanceSheet_,
         Erc20Interface underlying_,
-        Erc20Interface collateral_
+        Erc20Interface[] memory collaterals_
     ) Erc20Permit(name_, symbol_, 18) Admin() {
         uint8 defaultNumberOfDecimals = 18;
 
@@ -62,12 +62,18 @@ contract FyToken is
         underlyingPrecisionScalar = 10**(defaultNumberOfDecimals - underlyingDecimals);
         underlying = underlying_;
 
-        /* Set the collateral contract and calculate the decimal scalar offsets. */
-        uint256 collateralDecimals = collateral_.decimals();
-        require(collateralDecimals > 0, "ERR_FYTOKEN_CONSTRUCTOR_COLLATERAL_DECIMALS_ZERO");
-        require(defaultNumberOfDecimals >= collateralDecimals, "ERR_FYTOKEN_CONSTRUCTOR_COLLATERAL_DECIMALS_OVERFLOW");
-        collateralPrecisionScalar = 10**(defaultNumberOfDecimals - collateralDecimals);
-        collateral = collateral_;
+        for (uint256 i = 0; i < collaterals_.length; i += 1) {
+            /* Set the collateral contract and calculate the decimal scalar offsets. */
+            uint256 collateralDecimals = collaterals_[i].decimals();
+            require(collateralDecimals > 0, "ERR_FYTOKEN_CONSTRUCTOR_COLLATERAL_DECIMALS_ZERO");
+            require(
+                defaultNumberOfDecimals >= collateralDecimals,
+                "ERR_FYTOKEN_CONSTRUCTOR_COLLATERAL_DECIMALS_OVERFLOW"
+            );
+            collateralPrecisionScalars[collaterals[i]] = 10**(defaultNumberOfDecimals - collateralDecimals);
+        }
+
+        collaterals = collaterals_;
 
         /* Set the unix expiration time. */
         require(expirationTime_ > block.timestamp, "ERR_FYTOKEN_CONSTRUCTOR_EXPIRATION_TIME_NOT_VALID");
@@ -98,6 +104,10 @@ contract FyToken is
         return block.timestamp >= expirationTime;
     }
 
+    function getCollaterals() external view override returns (Erc20Interface[] memory) {
+        return collaterals;
+    }
+
     /**
      * NON-CONSTANT FUNCTIONS
      */
@@ -106,6 +116,7 @@ contract FyToken is
         MathError mathErr;
         uint256 debt;
         uint256 debtCeiling;
+        address collateralUsed;
         uint256 lockedCollateral;
         uint256 hypotheticalCollateralizationRatioMantissa;
         uint256 hypotheticalTotalSupply;
@@ -150,7 +161,7 @@ contract FyToken is
         require(vars.hypotheticalTotalSupply <= vars.debtCeiling, "ERR_BORROW_DEBT_CEILING_OVERFLOW");
 
         /* Add the borrow amount to the borrower account's current debt. */
-        (vars.debt, , vars.lockedCollateral, ) = balanceSheet.getVault(this, msg.sender);
+        (vars.debt, vars.collateralUsed, , vars.lockedCollateral, ) = balanceSheet.getVault(this, msg.sender);
         require(vars.lockedCollateral > 0, "ERR_BORROW_LOCKED_COLLATERAL_ZERO");
         (vars.mathErr, vars.newDebt) = addUInt(vars.debt, borrowAmount);
         require(vars.mathErr == MathError.NO_ERROR, "ERR_BORROW_MATH_ERROR");
@@ -159,6 +170,7 @@ contract FyToken is
         vars.hypotheticalCollateralizationRatioMantissa = balanceSheet.getHypotheticalCollateralizationRatio(
             this,
             msg.sender,
+            vars.collateralUsed,
             vars.lockedCollateral,
             vars.newDebt
         );
@@ -217,6 +229,7 @@ contract FyToken is
     struct LiquidateBorrowsLocalVars {
         MathError mathErr;
         uint256 collateralizationRatioMantissa;
+        address collateral;
         uint256 lockedCollateral;
         bool isAccountUnderwater;
     }
@@ -269,8 +282,10 @@ contract FyToken is
         /* Effects & Interactions: repay the borrower's debt. */
         repayBorrowInternal(msg.sender, borrower, repayAmount);
 
+        (vars.collateral, ) = balanceSheet.getVaultLockedCollateral(this, borrower);
+
         /* Interactions: clutch the collateral. */
-        uint256 clutchableCollateralAmount = balanceSheet.getClutchableCollateral(this, repayAmount);
+        uint256 clutchableCollateralAmount = balanceSheet.getClutchableCollateral(this, vars.collateral, repayAmount);
         require(
             balanceSheet.clutchCollateral(this, msg.sender, borrower, clutchableCollateralAmount),
             "ERR_LIQUIDATE_BORROW_CALL_CLUTCH_COLLATERAL"

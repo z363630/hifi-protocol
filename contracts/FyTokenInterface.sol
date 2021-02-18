@@ -17,6 +17,8 @@ abstract contract FyTokenInterface is
      */
     function isMatured() public view virtual returns (bool);
 
+    function getCollaterals() external view virtual returns (Erc20Interface[] memory);
+
     /**
      * NON-CONSTANT FUNCTIONS
      */

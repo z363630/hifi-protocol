@@ -107,18 +107,20 @@ contract BatterseaTargetV1 is
      *
      * @param balanceSheet The address of the BalanceSheet contract.
      * @param fyToken The address of the FyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to deposit.
      */
     function depositCollateral(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount
     ) public {
         /* Transfer the collateral to the DSProxy. */
-        fyToken.collateral().safeTransferFrom(msg.sender, address(this), collateralAmount);
+        Erc20Interface(collateral).safeTransferFrom(msg.sender, address(this), collateralAmount);
 
         /* Deposit the collateral into the BalanceSheet contract. */
-        depositCollateralInternal(balanceSheet, fyToken, collateralAmount);
+        depositCollateralInternal(balanceSheet, fyToken, collateral, collateralAmount);
     }
 
     /**
@@ -129,14 +131,16 @@ contract BatterseaTargetV1 is
      *
      * @param balanceSheet The address of the BalanceSheet contract.
      * @param fyToken The address of the FyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to deposit and lock.
      */
     function depositAndLockCollateral(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount
     ) public {
-        depositCollateral(balanceSheet, fyToken, collateralAmount);
+        depositCollateral(balanceSheet, fyToken, collateral, collateralAmount);
         balanceSheet.lockCollateral(fyToken, collateralAmount);
     }
 
@@ -151,16 +155,18 @@ contract BatterseaTargetV1 is
      *
      * @param balanceSheet The address of the BalanceSheet contract.
      * @param fyToken The address of the FyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to deposit and lock.
      * @param borrowAmount The amount of fyTokens to borrow.
      */
     function depositAndLockCollateralAndBorrow(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount,
         uint256 borrowAmount
     ) public payable {
-        depositAndLockCollateral(balanceSheet, fyToken, collateralAmount);
+        depositAndLockCollateral(balanceSheet, fyToken, collateral, collateralAmount);
         borrow(fyToken, borrowAmount);
     }
 
@@ -175,6 +181,7 @@ contract BatterseaTargetV1 is
      *
      * @param balanceSheet The address of the BalanceSheet contract.
      * @param fyToken The address of the FyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to deposit and lock.
      * @param borrowAmount The amount of fyTokens to borrow.
      * @param underlyingAmount The amount of underlying to sell fyTokens for.
@@ -182,11 +189,12 @@ contract BatterseaTargetV1 is
     function depositAndLockCollateralAndBorrowAndSellFyTokens(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount,
         uint256 borrowAmount,
         uint256 underlyingAmount
     ) external payable {
-        depositAndLockCollateral(balanceSheet, fyToken, collateralAmount);
+        depositAndLockCollateral(balanceSheet, fyToken, collateral, collateralAmount);
         borrowAndSellFyTokens(fyToken, borrowAmount, underlyingAmount);
     }
 
@@ -214,10 +222,11 @@ contract BatterseaTargetV1 is
     function freeAndWithdrawCollateral(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount
     ) external {
         balanceSheet.freeCollateral(fyToken, collateralAmount);
-        withdrawCollateral(balanceSheet, fyToken, collateralAmount);
+        withdrawCollateral(balanceSheet, fyToken, collateral, collateralAmount);
     }
 
     /**
@@ -423,13 +432,13 @@ contract BatterseaTargetV1 is
     function withdrawCollateral(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount
     ) public {
         balanceSheet.withdrawCollateral(fyToken, collateralAmount);
 
         /* The collateral is now in the DSProxy, so we relay it to the end user. */
-        Erc20Interface collateral = fyToken.collateral();
-        collateral.safeTransfer(msg.sender, collateralAmount);
+        Erc20Interface(collateral).safeTransfer(msg.sender, collateralAmount);
     }
 
     /**
@@ -447,7 +456,7 @@ contract BatterseaTargetV1 is
         WethInterface(WETH_ADDRESS).deposit{ value: collateralAmount }();
 
         /* Deposit the collateral into the BalanceSheet contract. */
-        depositCollateralInternal(balanceSheet, fyToken, collateralAmount);
+        depositCollateralInternal(balanceSheet, fyToken, WETH_ADDRESS, collateralAmount);
     }
 
     /**
@@ -499,13 +508,13 @@ contract BatterseaTargetV1 is
     function depositCollateralInternal(
         BalanceSheetInterface balanceSheet,
         FyTokenInterface fyToken,
+        address collateral,
         uint256 collateralAmount
     ) internal {
         /* Allow the BalanceSheet contract to spend tokens if allowance not enough. */
-        Erc20Interface collateral = fyToken.collateral();
-        uint256 allowance = collateral.allowance(address(this), address(balanceSheet));
+        uint256 allowance = Erc20Interface(collateral).allowance(address(this), address(balanceSheet));
         if (allowance < collateralAmount) {
-            collateral.approve(address(balanceSheet), type(uint256).max);
+            Erc20Interface(collateral).approve(address(balanceSheet), type(uint256).max);
         }
 
         /* Open the vault if not already open. */
@@ -515,7 +524,7 @@ contract BatterseaTargetV1 is
         }
 
         /* Deposit the collateral into the BalanceSheet contract. */
-        balanceSheet.depositCollateral(fyToken, collateralAmount);
+        balanceSheet.depositCollateral(fyToken, collateral, collateralAmount);
     }
 
     /**
