@@ -375,7 +375,6 @@ contract RedemptionPool is
         MathError mathErr;
         uint256 fyTokenAmount;
         uint256 fyTokenAmountRepay;
-        uint256 poolTokenAmountTotal;
         uint256 underlyingAmountTotal;
         uint256 underlyingAmountReal;
         uint256 underlyingPrecisionScalar;
@@ -383,30 +382,21 @@ contract RedemptionPool is
     }
 
     /**
-     * @notice Extracts liquidity previously provisioned to the Balancer pool.
+     * @notice Extracts the full liquidity previously provisioned to the Balancer pool by user.
      *
      * @dev Emits a {ExtractLiquidity} event.
      *
      * Requirements:
      *
-     * - The amount to extract cannot be zero.
-     * - The amount to extract cannot be larger that the sender's open position.
+     * - User must have already provided liquidity.
      *
-     * @param poolTokenAmount The amount of pool tokens to extract from the Balancer
-     *  pool liquidity.
      * @return true = success, otherwise it reverts.
      */
-    function extractLiquidity(uint256 poolTokenAmount) external override nonReentrant needsBPool returns (bool) {
+    function extractLiquidity() external override nonReentrant needsBPool returns (bool) {
         ExtractLiquidityLocalVars memory vars;
 
         /* Checks: the zero edge case. */
-        require(poolTokenAmount > 0, "EXTRACT_LIQUIDITY_ZERO");
-
-        /* Checks: the insufficient position case. */
-        require(
-            poolTokenAmount <= lpPositions[msg.sender].poolTokenAmountTotal,
-            "EXTRACT_LIQUIDITY_INSUFFICIENT_POSITION"
-        );
+        require(lpPositions[msg.sender].poolTokenAmountTotal > 0, "EXTRACT_LIQUIDITY_ZERO");
 
         vars.minAmountsOut = new uint256[](2);
         vars.minAmountsOut[0] = 0;
@@ -414,14 +404,7 @@ contract RedemptionPool is
 
         vars.underlyingAmountReal = fyToken.underlying().balanceOf(address(this));
 
-        bPool.exitPool(poolTokenAmount, vars.minAmountsOut);
-
-        (vars.mathErr, vars.poolTokenAmountTotal) = subUInt(
-            lpPositions[msg.sender].poolTokenAmountTotal,
-            poolTokenAmount
-        );
-        require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
-        lpPositions[msg.sender].poolTokenAmountTotal = vars.poolTokenAmountTotal;
+        bPool.exitPool(lpPositions[msg.sender].poolTokenAmountTotal, vars.minAmountsOut);
 
         (vars.mathErr, vars.underlyingAmountReal) = subUInt(
             fyToken.underlying().balanceOf(address(this)),
@@ -430,6 +413,8 @@ contract RedemptionPool is
         require(vars.mathErr == MathError.NO_ERROR, "ERR_EXTRACT_LIQUIDITY_MATH_ERROR");
 
         if (vars.underlyingAmountReal < lpPositions[msg.sender].underlyingAmountTotal) {
+            fyToken.underlying().transfer(msg.sender, vars.underlyingAmountReal);
+
             (vars.mathErr, vars.fyTokenAmountRepay) = subUInt(
                 lpPositions[msg.sender].underlyingAmountTotal,
                 vars.underlyingAmountReal
@@ -446,16 +431,21 @@ contract RedemptionPool is
             require(fyToken.mint(address(msg.sender), vars.fyTokenAmountRepay), "ERR_INJECT_LIQUIDITY_CALL_MINT");
         } else if (vars.underlyingAmountReal >= lpPositions[msg.sender].underlyingAmountTotal) {
             fyToken.underlying().transfer(msg.sender, lpPositions[msg.sender].underlyingAmountTotal);
-
-            lpPositions[msg.sender].underlyingAmountTotal = 0;
         }
+
+        lpPositions[msg.sender].underlyingAmountTotal = 0;
+        lpPositions[msg.sender].poolTokenAmountTotal = 0;
 
         /* Interactions: burn all leftover fyTokens. */
         if (fyToken.balanceOf(address(this)) > 0) {
             require(fyToken.burn(address(this), fyToken.balanceOf(address(this))), "ERR_EXTRACT_LIQUIDITY_CALL_BURN");
         }
 
-        emit ExtractLiquidity(msg.sender, vars.underlyingAmountReal, poolTokenAmount);
+        emit ExtractLiquidity(
+            msg.sender,
+            lpPositions[msg.sender].underlyingAmountTotal,
+            lpPositions[msg.sender].poolTokenAmountTotal
+        );
 
         return true;
     }

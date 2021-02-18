@@ -19,7 +19,7 @@ abstract contract RedemptionPoolInterface is RedemptionPoolStorage {
 
     function injectLiquidity(uint256 underlyingAmount) external virtual returns (bool);
 
-    function extractLiquidity(uint256 underlyingAmount) external virtual returns (bool);
+    function extractLiquidity() external virtual returns (bool);
 
     /**
      * EVENTS
