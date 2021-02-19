@@ -18,12 +18,20 @@ async function stubLiquidateBorrowInternalCalls(
   await this.stubs.balanceSheet.mock.setVaultDebt
     .withArgs(fyTokenAddress, this.accounts.borrower, newBorrowAmount)
     .returns(true);
-  await this.stubs.balanceSheet.mock.getClutchableCollateral
-    .withArgs(fyTokenAddress, repayAmount)
-    .returns(clutchedCollateralAmount);
+
+  for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+    await this.stubs.balanceSheet.mock.getClutchableCollateral
+      .withArgs(fyTokenAddress, this.stubs.collaterals[i].address, repayAmount)
+      .returns(clutchedCollateralAmount);
+  }
+
   await this.stubs.balanceSheet.mock.clutchCollateral
-    .withArgs(fyTokenAddress, this.accounts.liquidator, this.accounts.borrower, clutchedCollateralAmount)
-    .returns(true);
+  .withArgs(fyTokenAddress, this.accounts.liquidator, this.accounts.borrower, clutchedCollateralAmount)
+  .returns(true);
+
+  await this.stubs.balanceSheet.mock.getVaultLockedCollateral
+  .withArgs(fyTokenAddress, this.accounts.borrower)
+  .returns(this.stubs.collaterals[0].address, clutchedCollateralAmount);
 }
 
 export default function shouldBehaveLikeLiquidateBorrow(): void {

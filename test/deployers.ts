@@ -58,7 +58,7 @@ export async function deployFyToken(
   fintrollerAddress: string,
   balanceSheetAddress: string,
   underlyingAddress: string,
-  collateralAddress: string,
+  collateralAddresses: string[],
 ): Promise<FyToken> {
   const fyTokenArtifact: Artifact = await hre.artifacts.readArtifact("FyToken");
   const fyToken: FyToken = <FyToken>(
@@ -72,7 +72,7 @@ export async function deployFyToken(
         fintrollerAddress,
         balanceSheetAddress,
         underlyingAddress,
-        collateralAddress,
+        collateralAddresses,
       ],
       overrideOptions,
     )
@@ -97,7 +97,7 @@ export async function deployGodModeFyToken(
   fintrollerAddress: string,
   balanceSheetAddress: string,
   underlyingAddress: string,
-  collateralAddress: string,
+  collateralAddresses: string[],
 ): Promise<GodModeFyToken> {
   const godModeFyTokenArtifact: Artifact = await hre.artifacts.readArtifact("GodModeFyToken");
   const fyToken: GodModeFyToken = <GodModeFyToken>(
@@ -111,7 +111,7 @@ export async function deployGodModeFyToken(
         fintrollerAddress,
         balanceSheetAddress,
         underlyingAddress,
-        collateralAddress,
+        collateralAddresses,
       ],
       overrideOptions,
     )

@@ -116,9 +116,11 @@ export default function shouldBehaveLikeBorrow(): void {
               describe("when the caller did not deposit any collateral", function () {
                 beforeEach(async function () {
                   /* The fyToken makes an internal call to this stubbed function. */
-                  await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
-                    .withArgs(this.contracts.fyToken.address, this.accounts.borrower, Zero, borrowAmount)
-                    .returns(Zero);
+                  for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+                    await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
+                      .withArgs(this.contracts.fyToken.address, this.accounts.borrower, this.stubs.collaterals[i].address, Zero, borrowAmount)
+                      .returns(Zero);
+                  }
                 });
 
                 it("reverts", async function () {
@@ -136,13 +138,15 @@ export default function shouldBehaveLikeBorrow(): void {
                       this,
                       this.contracts.fyToken.address,
                       this.accounts.borrower,
+                      this.stubs.collaterals[0].address,
                       collateralAmount,
                     );
 
-                    /* The fyToken makes an internal call to this stubbed function. */
-                    await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
-                      .withArgs(this.contracts.fyToken.address, this.accounts.borrower, Zero, borrowAmount)
-                      .returns(Zero);
+                    for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+                      await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
+                        .withArgs(this.contracts.fyToken.address, this.accounts.borrower, this.stubs.collaterals[i].address, Zero, borrowAmount)
+                        .returns(Zero);
+                    }
                   });
 
                   it("reverts", async function () {
@@ -158,6 +162,7 @@ export default function shouldBehaveLikeBorrow(): void {
                       this,
                       this.contracts.fyToken.address,
                       this.accounts.borrower,
+                      this.stubs.collaterals[0].address,
                       collateralAmount,
                     );
                   });
@@ -166,14 +171,17 @@ export default function shouldBehaveLikeBorrow(): void {
                     const dangerousCollateralizationRatio: BigNumber = percentages.oneHundredAndTwenty;
 
                     beforeEach(async function () {
-                      await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
-                        .withArgs(
-                          this.contracts.fyToken.address,
-                          this.accounts.borrower,
-                          collateralAmount,
-                          borrowAmount,
-                        )
-                        .returns(dangerousCollateralizationRatio);
+                      for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+                        await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
+                          .withArgs(
+                            this.contracts.fyToken.address,
+                            this.accounts.borrower,
+                            this.stubs.collaterals[i].address,
+                            collateralAmount,
+                            borrowAmount,
+                          )
+                          .returns(dangerousCollateralizationRatio);
+                      }
                     });
 
                     it("reverts", async function () {
@@ -187,14 +195,17 @@ export default function shouldBehaveLikeBorrow(): void {
                     const safeCollateralizationRatio: BigNumber = percentages.oneThousand;
 
                     beforeEach(async function () {
-                      await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
-                        .withArgs(
-                          this.contracts.fyToken.address,
-                          this.accounts.borrower,
-                          collateralAmount,
-                          borrowAmount,
-                        )
-                        .returns(safeCollateralizationRatio);
+                      for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+                        await this.stubs.balanceSheet.mock.getHypotheticalCollateralizationRatio
+                          .withArgs(
+                            this.contracts.fyToken.address,
+                            this.accounts.borrower,
+                            this.stubs.collaterals[i].address,
+                            collateralAmount,
+                            borrowAmount,
+                          )
+                          .returns(safeCollateralizationRatio);
+                        }
                     });
 
                     describe("when the call to set the new vault debt does not succeed", function () {

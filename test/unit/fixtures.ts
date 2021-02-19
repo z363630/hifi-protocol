@@ -86,7 +86,7 @@ export async function unitFixtureFintroller(signers: Signer[]): Promise<UnitFixt
 
 type UnitFixtureFyTokenReturnType = {
   balanceSheet: MockContract;
-  collateral: MockContract;
+  collaterals: MockContract[];
   fintroller: MockContract;
   fyToken: GodModeFyToken;
   oracle: MockContract;
@@ -103,14 +103,18 @@ export async function unitFixtureFyToken(signers: Signer[]): Promise<UnitFixture
 
   const balanceSheet: MockContract = await deployStubBalanceSheet(deployer);
   const underlying: MockContract = await deployStubUnderlying(deployer);
-  const collateral: MockContract = await deployStubCollateral(deployer);
+
+  const collateralABC: MockContract = await deployStubCollateral(deployer);
+  const collateralXYZ: MockContract = await deployStubCollateral(deployer);
+  const collaterals = [collateralABC, collateralXYZ];
+
   const fyToken: GodModeFyToken = await deployGodModeFyToken(
     deployer,
     fyTokenConstants.expirationTime,
     fintroller.address,
     balanceSheet.address,
     underlying.address,
-    collateral.address,
+    [collateralABC.address, collateralXYZ.address],
   );
 
   /**
@@ -121,7 +125,7 @@ export async function unitFixtureFyToken(signers: Signer[]): Promise<UnitFixture
   const redemptionPool: MockContract = await deployStubRedemptionPool(deployer);
   await fyToken.__godMode__setRedemptionPool(redemptionPool.address);
 
-  return { balanceSheet, collateral, fintroller, oracle, redemptionPool, underlying, fyToken };
+  return { balanceSheet, collaterals, fintroller, oracle, redemptionPool, underlying, fyToken };
 }
 
 type UnitFixtureRedemptionPoolReturnType = {

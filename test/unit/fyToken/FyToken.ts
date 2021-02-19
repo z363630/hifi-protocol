@@ -6,7 +6,7 @@ export function unitTestFyToken(): void {
     beforeEach(async function () {
       const {
         balanceSheet,
-        collateral,
+        collaterals,
         fintroller,
         oracle,
         redemptionPool,
@@ -15,7 +15,7 @@ export function unitTestFyToken(): void {
       } = await this.loadFixture(unitFixtureFyToken);
       this.contracts.fyToken = fyToken;
       this.stubs.balanceSheet = balanceSheet;
-      this.stubs.collateral = collateral;
+      this.stubs.collaterals = collaterals;
       this.stubs.fintroller = fintroller;
       this.stubs.oracle = oracle;
       this.stubs.redemptionPool = redemptionPool;

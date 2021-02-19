@@ -1,5 +1,5 @@
 import { BigNumber } from "@ethersproject/bignumber";
-import { One, Zero } from "@ethersproject/constants";
+import { One, Zero, AddressZero } from "@ethersproject/constants";
 
 import { getNow, getDaysInSeconds } from "./time";
 
@@ -97,6 +97,7 @@ export const defaultPrivateKeys = {
 export const balanceSheetConstants = {
   defaultVault: {
     debt: Zero,
+    collateralUsed: AddressZero,
     freeCollateral: Zero,
     lockedCollateral: Zero,
     isOpen: true,

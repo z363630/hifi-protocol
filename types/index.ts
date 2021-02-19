@@ -27,8 +27,8 @@ export interface Accounts {
 /* TODO: refactor this so that contract types differ for each test suite type. */
 export interface Contracts {
   balanceSheet: GodModeBalanceSheet | BalanceSheet;
-  collateral: Erc20Mintable;
-  collateralPriceFeed: SimplePriceFeed;
+  collaterals: Erc20Mintable[];
+  collateralPriceFeeds: SimplePriceFeed[];
   fintroller: Fintroller;
   fyToken: GodModeFyToken | FyToken;
   oracle: ChainlinkOperator;
@@ -48,8 +48,8 @@ export interface Signers {
 
 export interface Stubs {
   balanceSheet: MockContract;
-  collateral: MockContract;
-  collateralPriceFeed: MockContract;
+  collaterals: MockContract[];
+  collateralPriceFeeds: MockContract[];
   fintroller: MockContract;
   fyToken: MockContract;
   oracle: MockContract;

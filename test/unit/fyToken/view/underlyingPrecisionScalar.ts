@@ -29,7 +29,7 @@ export default function shouldBehaveLikeUnderlyingPrecisionScalarGetter(): void 
         this.stubs.fintroller.address,
         this.stubs.balanceSheet.address,
         this.stubs.underlying.address,
-        this.stubs.collateral.address,
+        this.stubs.collaterals.map((collateral) => collateral.address),
       );
       const underlyingPrecisionScalar: BigNumber = await fyToken.underlyingPrecisionScalar();
       expect(underlyingPrecisionScalar).to.equal(precisionScalars.tokenWith8Decimals);

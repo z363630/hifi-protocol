@@ -1,8 +1,8 @@
 import shouldBehaveLikeConstructor from "./constructor";
 
-import shouldBehaveLikeCollateralPrecisionScalarGetter from "./view/collateralPrecisionScalar";
+import shouldBehaveLikeCollateralPrecisionScalarsGetter from "./view/collateralPrecisionScalars";
 import shouldBehaveLikeBalanceSheetGetter from "./view/balanceSheet";
-import shouldBehaveLikeCollateralGetter from "./view/collateral";
+import shouldBehaveLikeCollateralsGetter from "./view/collaterals";
 import shouldBehaveLikeExpirationTimeGetter from "./view/expirationTime";
 import shouldBehaveLikeFintrollerGetter from "./view/fintroller";
 import shouldBehaveLikeRedemptionPoolGetter from "./view/redemptionPool";
@@ -28,12 +28,12 @@ export function shouldBehaveLikeFyToken(): void {
       shouldBehaveLikeBalanceSheetGetter();
     });
 
-    describe("collateral", function () {
-      shouldBehaveLikeCollateralGetter();
+    describe("collaterals", function () {
+      shouldBehaveLikeCollateralsGetter();
     });
 
-    describe("collateralPrecisionScalar", function () {
-      shouldBehaveLikeCollateralPrecisionScalarGetter();
+    describe("collateralPrecisionScalars", function () {
+      shouldBehaveLikeCollateralPrecisionScalarsGetter();
     });
 
     describe("expirationTime", function () {
