@@ -70,7 +70,7 @@ contract FyToken is
                 defaultNumberOfDecimals >= collateralDecimals,
                 "ERR_FYTOKEN_CONSTRUCTOR_COLLATERAL_DECIMALS_OVERFLOW"
             );
-            collateralPrecisionScalars[collaterals[i]] = 10**(defaultNumberOfDecimals - collateralDecimals);
+            collateralPrecisionScalars[collaterals_[i]] = 10**(defaultNumberOfDecimals - collateralDecimals);
         }
 
         collaterals = collaterals_;
