@@ -20,12 +20,12 @@ export default function shouldBehaveLikeLockCollateral(): void {
           await this.stubs.fintroller.mock.getDepositCollateralAllowed
             .withArgs(this.stubs.fyToken.address)
             .returns(true);
-          await this.stubs.collateral.mock.transferFrom
+          await this.stubs.collaterals[0].mock.transferFrom
             .withArgs(this.accounts.borrower, this.contracts.balanceSheet.address, depositCollateralAmount)
             .returns(true);
           await this.contracts.balanceSheet
             .connect(this.signers.borrower)
-            .depositCollateral(this.stubs.fyToken.address, depositCollateralAmount);
+            .depositCollateral(this.stubs.fyToken.address, this.stubs.collaterals[0].address, depositCollateralAmount);
         });
 
         it("it locks the collateral", async function () {
@@ -33,8 +33,8 @@ export default function shouldBehaveLikeLockCollateral(): void {
             this.stubs.fyToken.address,
             this.accounts.borrower,
           );
-          const oldFreeCollateral: BigNumber = oldVault[1];
-          const oldLockedCollateral: BigNumber = oldVault[2];
+          const oldFreeCollateral: BigNumber = oldVault[2];
+          const oldLockedCollateral: BigNumber = oldVault[3];
 
           await this.contracts.balanceSheet
             .connect(this.signers.borrower)
@@ -44,8 +44,8 @@ export default function shouldBehaveLikeLockCollateral(): void {
             this.stubs.fyToken.address,
             this.accounts.borrower,
           );
-          const newFreeCollateral: BigNumber = newVault[1];
-          const newLockedCollateral: BigNumber = newVault[2];
+          const newFreeCollateral: BigNumber = newVault[2];
+          const newLockedCollateral: BigNumber = newVault[3];
 
           expect(oldFreeCollateral).to.equal(newFreeCollateral.add(depositCollateralAmount));
           expect(oldLockedCollateral).to.equal(newLockedCollateral.sub(depositCollateralAmount));
@@ -58,7 +58,7 @@ export default function shouldBehaveLikeLockCollateral(): void {
               .lockCollateral(this.stubs.fyToken.address, depositCollateralAmount),
           )
             .to.emit(this.contracts.balanceSheet, "LockCollateral")
-            .withArgs(this.stubs.fyToken.address, this.accounts.borrower, depositCollateralAmount);
+            .withArgs(this.stubs.fyToken.address, this.accounts.borrower, this.stubs.collaterals[0].address, depositCollateralAmount);
         });
       });
 

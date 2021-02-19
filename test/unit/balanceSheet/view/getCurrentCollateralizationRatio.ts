@@ -15,6 +15,12 @@ export default function shouldBehaveLikeGetCurrentCollateralizationRatio(): void
       lockedCollateral,
     );
     await this.contracts.balanceSheet.__godMode_setVaultDebt(this.stubs.fyToken.address, this.accounts.borrower, debt);
+    await this.contracts.balanceSheet.__godMode_setVaultDebt(this.stubs.fyToken.address, this.accounts.borrower, debt);
+    await this.contracts.balanceSheet.__godMode_setCollateralUsed(
+      this.stubs.fyToken.address,
+      this.accounts.borrower,
+      this.stubs.collaterals[0].address,
+    )
   });
 
   it("returns the current collateralization ratio mantissa", async function () {

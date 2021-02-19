@@ -49,12 +49,12 @@ export default function shouldBehaveLikeWithdrawCollateral(): void {
           await this.stubs.fintroller.mock.getDepositCollateralAllowed
             .withArgs(this.stubs.fyToken.address)
             .returns(true);
-          await this.stubs.collateral.mock.transferFrom
+          await this.stubs.collaterals[0].mock.transferFrom
             .withArgs(this.accounts.borrower, this.contracts.balanceSheet.address, collateralAmount)
             .returns(true);
           await this.contracts.balanceSheet
             .connect(this.signers.borrower)
-            .depositCollateral(this.stubs.fyToken.address, collateralAmount);
+            .depositCollateral(this.stubs.fyToken.address, this.stubs.collaterals[0].address, collateralAmount);
         });
 
         describe("when the caller locked the collateral", function () {
@@ -75,7 +75,7 @@ export default function shouldBehaveLikeWithdrawCollateral(): void {
 
         describe("when the caller did not lock the collateral", function () {
           beforeEach(async function () {
-            await this.stubs.collateral.mock.transfer.withArgs(this.accounts.borrower, collateralAmount).returns(true);
+            await this.stubs.collaterals[0].mock.transfer.withArgs(this.accounts.borrower, collateralAmount).returns(true);
           });
 
           it("makes the collateral withdrawal", async function () {
@@ -91,7 +91,7 @@ export default function shouldBehaveLikeWithdrawCollateral(): void {
                 .withdrawCollateral(this.stubs.fyToken.address, collateralAmount),
             )
               .to.emit(this.contracts.balanceSheet, "WithdrawCollateral")
-              .withArgs(this.stubs.fyToken.address, this.accounts.borrower, collateralAmount);
+              .withArgs(this.stubs.fyToken.address, this.accounts.borrower, this.stubs.collaterals[0].address, collateralAmount);
           });
         });
       });

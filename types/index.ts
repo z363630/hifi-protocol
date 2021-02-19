@@ -60,7 +60,8 @@ export interface Stubs {
 
 export interface Vault {
   0: BigNumber /* debt */;
-  1: BigNumber /* freeCollateral */;
-  2: BigNumber /* lockedCollateral */;
-  3: boolean /* isOpen */;
+  1: string /* collateralUsed */;
+  2: BigNumber /* freeCollateral */;
+  3: BigNumber /* lockedCollateral */;
+  4: boolean /* isOpen */;
 }

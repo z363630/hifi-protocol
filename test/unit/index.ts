@@ -7,9 +7,9 @@ import { unitTestFyToken } from "./fyToken/FyToken";
 import { unitTestRedemptionPool } from "./redemptionPool/RedemptionPool";
 
 baseContext("Unit Tests", function () {
-  // unitTestBalanceSheet();
+  unitTestBalanceSheet();
   // unitTestChainlinkOperator();
   // unitTestFintroller();
-  unitTestFyToken();
-  // unitTestRedemptionPool();
+  // unitTestFyToken(); OK
+  // unitTestRedemptionPool(); OK
 });

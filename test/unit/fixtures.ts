@@ -29,7 +29,7 @@ import { fyTokenConstants } from "../../helpers/constants";
 
 type UnitFixtureBalanceSheetReturnType = {
   balanceSheet: GodModeBalanceSheet;
-  collateral: MockContract;
+  collaterals: MockContract[];
   fintroller: MockContract;
   oracle: MockContract;
   underlying: MockContract;
@@ -39,7 +39,10 @@ type UnitFixtureBalanceSheetReturnType = {
 export async function unitFixtureBalanceSheet(signers: Signer[]): Promise<UnitFixtureBalanceSheetReturnType> {
   const deployer: Signer = signers[0];
 
-  const collateral: MockContract = await deployStubCollateral(deployer);
+  const collateralABC: MockContract = await deployStubCollateral(deployer);
+  const collateralXYZ: MockContract = await deployStubCollateral(deployer);
+  const collaterals = [collateralABC, collateralXYZ];
+
   const underlying: MockContract = await deployStubUnderlying(deployer);
 
   const oracle: MockContract = await deployStubChainlinkOperator(deployer);
@@ -47,13 +50,14 @@ export async function unitFixtureBalanceSheet(signers: Signer[]): Promise<UnitFi
   await fintroller.mock.oracle.returns(oracle.address);
 
   const fyToken: MockContract = await deployStubFyToken(deployer);
-  await fyToken.mock.collateral.returns(collateral.address);
-  await fyToken.mock.collateralPrecisionScalar.returns(One);
+  await fyToken.mock.getCollaterals.returns([collateralABC.address, collateralXYZ.address]);
+  await fyToken.mock.collateralPrecisionScalars.withArgs(collateralABC.address).returns(One);
+  await fyToken.mock.collateralPrecisionScalars.withArgs(collateralXYZ.address).returns(One);
   await fyToken.mock.underlying.returns(underlying.address);
   await fyToken.mock.underlyingPrecisionScalar.returns(One);
 
   const balanceSheet: GodModeBalanceSheet = await deployGodModeBalanceSheet(deployer, fintroller.address);
-  return { balanceSheet, collateral, fintroller, oracle, underlying, fyToken };
+  return { balanceSheet, collaterals, fintroller, oracle, underlying, fyToken };
 }
 
 type UnitFixtureChainlinkOperatorReturnType = {

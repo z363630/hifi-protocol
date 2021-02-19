@@ -47,6 +47,12 @@ export default function shouldBehaveLikeIsAccountUnderwater(): void {
           this.accounts.borrower,
           debt,
         );
+
+        await this.contracts.balanceSheet.__godMode_setCollateralUsed(
+          this.stubs.fyToken.address,
+          this.accounts.borrower,
+          this.stubs.collaterals[0].address,
+        )
       });
 
       describe("when the user is safely collateralized", function () {
