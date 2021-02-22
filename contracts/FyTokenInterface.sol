@@ -45,6 +45,7 @@ abstract contract FyTokenInterface is
         address indexed liquidator,
         address indexed borrower,
         uint256 repayAmount,
+        address collateral,
         uint256 clutchedCollateralAmount
     );
 

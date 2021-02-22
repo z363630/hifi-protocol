@@ -284,6 +284,7 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
                         this.accounts.liquidator,
                         this.accounts.borrower,
                         repayAmount,
+                        this.stubs.collaterals[0].address,
                         clutchableCollateralAmount,
                       );
                   });

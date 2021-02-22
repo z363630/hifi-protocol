@@ -295,7 +295,7 @@ contract FyToken is
             "ERR_LIQUIDATE_BORROW_CALL_CLUTCH_COLLATERAL"
         );
 
-        emit LiquidateBorrow(msg.sender, borrower, repayAmount, clutchableCollateralAmount);
+        emit LiquidateBorrow(msg.sender, borrower, repayAmount, vars.collateral, clutchableCollateralAmount);
 
         return true;
     }
