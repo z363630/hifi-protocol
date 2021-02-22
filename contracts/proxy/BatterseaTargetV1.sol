@@ -217,6 +217,7 @@ contract BatterseaTargetV1 is
      * BalanceSheet contract.
      * @param balanceSheet The address of the BalanceSheet contract.
      * @param fyToken The address of the FyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to free and withdraw.
      */
     function freeAndWithdrawCollateral(
@@ -427,6 +428,7 @@ contract BatterseaTargetV1 is
      * @notice Withdraws collateral from the vault in the BalanceSheet contract.
      * @param balanceSheet The address of the BalanceSheet contract.
      * @param fyToken The address of the FyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to withdraw.
      */
     function withdrawCollateral(

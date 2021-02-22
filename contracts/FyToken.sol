@@ -104,6 +104,10 @@ contract FyToken is
         return block.timestamp >= expirationTime;
     }
 
+    /**
+     * @notice Returns the collaterals allowed for this FyToken
+     * @return The collaterals as an array of ERC20
+     */
     function getCollaterals() external view override returns (Erc20Interface[] memory) {
         return collaterals;
     }

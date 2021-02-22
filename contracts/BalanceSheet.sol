@@ -181,6 +181,7 @@ contract BalanceSheet is
      *
      * @param fyToken The fyToken for which to make the query against.
      * @param borrower The borrower account for which to make the query against.
+     * @param collateral The address of the hypothetical locked collateral.
      * @param lockedCollateral The hypothetical locked collateral.
      * @param debt The hypothetical debt.
      * @return The hypothetical collateralization ratio as a percentage mantissa if locked
@@ -249,7 +250,7 @@ contract BalanceSheet is
 
     /**
      * @notice Reads the storage properties of a vault.
-     * @return (uint256 debt, uint256 freeCollateral, uint256 lockedCollateral, bool isOpen).
+     * @return (uint256 debt, address collateralUsed, uint256 freeCollateral, uint256 lockedCollateral, bool isOpen).
      */
     function getVault(FyTokenInterface fyToken, address borrower)
         external
@@ -282,7 +283,7 @@ contract BalanceSheet is
 
     /**
      * @notice Reads the amount of collateral that the given borrower account locked in the vault.
-     * @return The collateral locked in the vault by the borrower, as an uint256.
+     * @return The address and the amount of collateral currently locked in the vault by the borrower.
      */
     function getVaultLockedCollateral(FyTokenInterface fyToken, address borrower)
         external
@@ -333,6 +334,8 @@ contract BalanceSheet is
      * - Can only be called by the fyToken.
      * - There must be enough collateral in the borrower's vault.
      *
+     * Obviously the clutched collateral will the one used by the borrower.
+     *
      * @param fyToken The address of the fyToken contract.
      * @param liquidator The account who repays the borrower's debt and receives the collateral.
      * @param borrower The account who fell underwater and is liquidated.
@@ -381,8 +384,10 @@ contract BalanceSheet is
      * - The amount to deposit cannot be zero.
      * - The Fintroller must allow this action to be performed.
      * - The caller must have allowed this contract to spend `collateralAmount` tokens.
+     * - Once a deposit has been made, the borrower needs to keep on using the same token as a collateral.
      *
      * @param fyToken The address of the fyToken contract.
+     * @param collateral The address of the collateral to deposit.
      * @param collateralAmount The amount of collateral to deposit.
      * @return bool true = success, otherwise it reverts.
      */
@@ -402,14 +407,14 @@ contract BalanceSheet is
         /* Checks: if this collateral can be used for this fyToken */
         require(
             ArrayUtils.includes(fyToken.getCollaterals(), Erc20Interface(collateral)),
-            "ERR_DEPOSIT_COLLATERAL_WRONG_COLLATERAL"
+            "ERR_DEPOSIT_COLLATERAL_UNAUTHORIZED_COLLATERAL"
         );
 
         /* Checks: only one type of collateral can be deposited at a time */
         require(
             vaults[address(fyToken)][msg.sender].collateralUsed == address(0)
             || vaults[address(fyToken)][msg.sender].collateralUsed == collateral,
-            "ERR_DEPOSIT_COLLATERAL_WRONG_TYPE"
+            "ERR_DEPOSIT_COLLATERAL_WRONG_COLLATERAL"
         );
 
         /* Effects: update storage. */
