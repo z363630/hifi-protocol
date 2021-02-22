@@ -16,14 +16,18 @@ export default function shouldBehaveLikeGetAdjustedPrice(): void {
 
   describe("when the feed is set", function () {
     beforeEach(async function () {
-      await this.contracts.oracle
-        .connect(this.signers.admin)
-        .setFeed(this.stubs.collateral.address, this.stubs.collateralPriceFeed.address);
+      for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+        await this.contracts.oracle
+          .connect(this.signers.admin)
+          .setFeed(this.stubs.collaterals[i].address, this.stubs.collateralPriceFeeds[i].address);
+      }
     });
 
     describe("when the multiplication overflows uint256", function () {
       beforeEach(async function () {
-        await this.stubs.collateralPriceFeed.mock.latestRoundData.returns(Zero, maxInt256, Zero, Zero, Zero);
+        for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+          await this.stubs.collateralPriceFeeds[i].mock.latestRoundData.returns(Zero, maxInt256, Zero, Zero, Zero);
+        }
       });
 
       it("reverts", async function () {

@@ -27,15 +27,15 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
       .setBondDebtCeiling(this.contracts.fyToken.address, tokenAmounts.oneHundredThousand);
 
     /* Mint 10 WETH and approve the Balance Sheet to spend it all. */
-    await this.contracts.collateral.mint(this.accounts.borrower, collateralAmount);
-    await this.contracts.collateral
+    await this.contracts.collaterals[0].mint(this.accounts.borrower, collateralAmount);
+    await this.contracts.collaterals[0]
       .connect(this.signers.borrower)
       .approve(this.contracts.balanceSheet.address, collateralAmount);
 
     /* Deposit the 10 WETH in the Balance Sheet. */
     await this.contracts.balanceSheet
       .connect(this.signers.borrower)
-      .depositCollateral(this.contracts.fyToken.address, collateralAmount);
+      .depositCollateral(this.contracts.fyToken.address, this.contracts.collaterals[0].address, collateralAmount);
 
     /* Lock the 10 WETH in the vault. */
     await this.contracts.balanceSheet

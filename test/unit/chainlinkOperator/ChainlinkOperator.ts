@@ -4,10 +4,10 @@ import { unitFixtureChainlinkOperator } from "../fixtures";
 export function unitTestChainlinkOperator(): void {
   describe("ChainlinkOperator", function () {
     beforeEach(async function () {
-      const { collateral, collateralPriceFeed, oracle } = await this.loadFixture(unitFixtureChainlinkOperator);
+      const { collaterals, collateralPriceFeeds, oracle } = await this.loadFixture(unitFixtureChainlinkOperator);
       this.contracts.oracle = oracle;
-      this.stubs.collateral = collateral;
-      this.stubs.collateralPriceFeed = collateralPriceFeed;
+      this.stubs.collaterals = collaterals;
+      this.stubs.collateralPriceFeeds = collateralPriceFeeds;
     });
 
     shouldBehaveLikeChainlinkOperator();

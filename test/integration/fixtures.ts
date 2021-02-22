@@ -9,8 +9,10 @@ import { GodModeRedemptionPool } from "../../typechain/GodModeRedemptionPool";
 import { SimplePriceFeed } from "../../typechain/SimplePriceFeed";
 import {
   deployChainlinkOperator,
-  deployCollateral,
-  deployCollateralPriceFeed,
+  deployCollateralABC,
+  deployCollateralXYZ,
+  deployCollateralABCPriceFeed,
+  deployCollateralXYZPriceFeed,
   deployFintroller,
   deployGodModeBalanceSheet,
   deployGodModeFyToken,
@@ -22,8 +24,8 @@ import { fyTokenConstants } from "../../helpers/constants";
 
 type IntegrationFixtureReturnType = {
   balanceSheet: GodModeBalanceSheet;
-  collateral: Erc20Mintable;
-  collateralPriceFeed: SimplePriceFeed;
+  collaterals: Erc20Mintable[];
+  collateralPriceFeeds: SimplePriceFeed[];
   fintroller: Fintroller;
   fyToken: GodModeFyToken;
   oracle: ChainlinkOperator;
@@ -35,13 +37,21 @@ type IntegrationFixtureReturnType = {
 export async function integrationFixture(signers: Signer[]): Promise<IntegrationFixtureReturnType> {
   const deployer: Signer = signers[0];
 
-  const collateral: Erc20Mintable = await deployCollateral(deployer);
+  const collateralABC: Erc20Mintable = await deployCollateralABC(deployer);
+  const collateralXYZ: Erc20Mintable = await deployCollateralXYZ(deployer);
+  const collaterals = [collateralABC, collateralXYZ];
+
   const underlying: Erc20Mintable = await deployUnderlying(deployer);
 
-  const collateralPriceFeed: SimplePriceFeed = await deployCollateralPriceFeed(deployer);
+  const collateralABCPriceFeed: SimplePriceFeed = await deployCollateralABCPriceFeed(deployer);
+  const collateralXYZPriceFeed: SimplePriceFeed = await deployCollateralXYZPriceFeed(deployer);
+  const collateralPriceFeeds = [collateralABCPriceFeed, collateralXYZPriceFeed];
+
+
   const underlyingPriceFeed: SimplePriceFeed = await deployUnderlyingPriceFeed(deployer);
   const oracle: ChainlinkOperator = await deployChainlinkOperator(deployer);
-  await oracle.setFeed(collateral.address, collateralPriceFeed.address);
+  await oracle.setFeed(collateralABC.address, collateralABCPriceFeed.address);
+  await oracle.setFeed(collateralXYZ.address, collateralXYZPriceFeed.address);
   await oracle.setFeed(underlying.address, underlyingPriceFeed.address);
 
   const fintroller: Fintroller = await deployFintroller(deployer);
@@ -56,7 +66,7 @@ export async function integrationFixture(signers: Signer[]): Promise<Integration
     fintroller.address,
     balanceSheet.address,
     underlying.address,
-    collateral.address,
+    [collateralABC.address, collateralXYZ.address],
   );
 
   const redemptionPool: GodModeRedemptionPool = await deployGodModeRedemptionPool(
@@ -68,8 +78,8 @@ export async function integrationFixture(signers: Signer[]): Promise<Integration
 
   return {
     balanceSheet,
-    collateral,
-    collateralPriceFeed,
+    collaterals,
+    collateralPriceFeeds,
     fintroller,
     fyToken,
     oracle,

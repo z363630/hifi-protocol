@@ -14,14 +14,18 @@ export default function shouldBehaveLikeGetPrice(): void {
 
   describe("when the feed is set", function () {
     beforeEach(async function () {
-      await this.contracts.oracle
-        .connect(this.signers.admin)
-        .setFeed(this.stubs.collateral.address, this.stubs.collateralPriceFeed.address);
+      for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+        await this.contracts.oracle
+          .connect(this.signers.admin)
+          .setFeed(this.stubs.collaterals[i].address, this.stubs.collateralPriceFeeds[i].address);
+      }
     });
 
     describe("when the price is zero", function () {
       beforeEach(async function () {
-        await this.stubs.collateralPriceFeed.mock.latestRoundData.returns(Zero, Zero, Zero, Zero, Zero);
+        for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+          await this.stubs.collateralPriceFeeds[i].mock.latestRoundData.returns(Zero, Zero, Zero, Zero, Zero);
+        }
       });
 
       it("reverts", async function () {
@@ -31,13 +35,15 @@ export default function shouldBehaveLikeGetPrice(): void {
 
     describe("when the price is not zero", function () {
       beforeEach(async function () {
-        await this.stubs.collateralPriceFeed.mock.latestRoundData.returns(
-          Zero,
-          prices.oneHundredDollars,
-          Zero,
-          Zero,
-          Zero,
-        );
+        for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+          await this.stubs.collateralPriceFeeds[i].mock.latestRoundData.returns(
+            Zero,
+            prices.oneHundredDollars,
+            Zero,
+            Zero,
+            Zero,
+          );
+        }
       });
 
       it("retrieves the price", async function () {

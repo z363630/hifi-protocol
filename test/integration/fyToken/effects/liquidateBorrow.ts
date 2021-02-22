@@ -37,15 +37,15 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
     await this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(percentages.oneHundredAndTen);
 
     /* Mint 10 WETH and approve the Balance Sheet to spend it all. */
-    await this.contracts.collateral.mint(this.accounts.borrower, collateralAmount);
-    await this.contracts.collateral
+    await this.contracts.collaterals[0].mint(this.accounts.borrower, collateralAmount);
+    await this.contracts.collaterals[0]
       .connect(this.signers.borrower)
       .approve(this.contracts.balanceSheet.address, collateralAmount);
 
     /* Deposit the 10 WETH in the Balance Sheet. */
     await this.contracts.balanceSheet
       .connect(this.signers.borrower)
-      .depositCollateral(this.contracts.fyToken.address, collateralAmount);
+      .depositCollateral(this.contracts.fyToken.address, this.contracts.collaterals[0].address, collateralAmount);
 
     /* Lock the 10 WETH in the vault. */
     await this.contracts.balanceSheet
@@ -56,7 +56,7 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
     await this.contracts.fyToken.connect(this.signers.borrower).borrow(borrowAmount);
 
     /* Set the price of 1 WETH to $12 so that the new collateralization ratio becomes 120%. */
-    await this.contracts.collateralPriceFeed.setPrice(prices.twelveDollars);
+    await this.contracts.collateralPriceFeeds[0].setPrice(prices.twelveDollars);
 
     /* Mint 100 fyDAI to the liquidator so he can repay the debt. */
     await this.contracts.fyToken.__godMode_mint(this.accounts.liquidator, repayAmount);
@@ -64,6 +64,7 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
     /* Calculate the amount of clutchable collateral. */
     clutchableCollateralAmount = await this.contracts.balanceSheet.getClutchableCollateral(
       this.contracts.fyToken.address,
+      this.contracts.collaterals[0].address,
       repayAmount,
     );
   });
@@ -75,7 +76,7 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
   describe("when there is not enough locked collateral", function () {
     beforeEach(async function () {
       /* Set the price of 1 WETH = $1 so that the new collateralization ratio becomes 10%. */
-      await this.contracts.collateralPriceFeed.setPrice(prices.oneDollar);
+      await this.contracts.collateralPriceFeeds[0].setPrice(prices.oneDollar);
     });
 
     it("reverts", async function () {
@@ -111,26 +112,33 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
     });
 
     it("reduces the locked collateral of the borrower", async function () {
-      const oldLockedCollateral: BigNumber = await this.contracts.balanceSheet.getVaultLockedCollateral(
+      const oldVaultLockedCollateral = await this.contracts.balanceSheet.getVaultLockedCollateral(
         this.contracts.fyToken.address,
         this.accounts.borrower,
       );
+
+      const oldLockedCollateral: BigNumber = oldVaultLockedCollateral[1];
+
       await this.contracts.fyToken
         .connect(this.signers.liquidator)
         .liquidateBorrow(this.accounts.borrower, repayAmount);
-      const newLockedCollateral: BigNumber = await this.contracts.balanceSheet.getVaultLockedCollateral(
+
+      const newVaultLockedCollateral = await this.contracts.balanceSheet.getVaultLockedCollateral(
         this.contracts.fyToken.address,
         this.accounts.borrower,
       );
-      expect(oldLockedCollateral).to.equal(newLockedCollateral.add(clutchableCollateralAmount));
+
+      const newLockedCollateral: BigNumber = newVaultLockedCollateral[1];
+
+      expect(oldVaultLockedCollateral).to.equal(newLockedCollateral.add(clutchableCollateralAmount));
     });
 
     it("transfers the clutched collateral to the liquidator", async function () {
-      const oldBalance: BigNumber = await this.contracts.collateral.balanceOf(this.accounts.liquidator);
+      const oldBalance: BigNumber = await this.contracts.collaterals[0].balanceOf(this.accounts.liquidator);
       await this.contracts.fyToken
         .connect(this.signers.liquidator)
         .liquidateBorrow(this.accounts.borrower, repayAmount);
-      const newBalance: BigNumber = await this.contracts.collateral.balanceOf(this.accounts.liquidator);
+      const newBalance: BigNumber = await this.contracts.collaterals[0].balanceOf(this.accounts.liquidator);
       expect(oldBalance).to.equal(newBalance.sub(clutchableCollateralAmount));
     });
 

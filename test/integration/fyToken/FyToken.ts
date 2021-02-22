@@ -6,8 +6,8 @@ export function integrationTestFyToken(): void {
     beforeEach(async function () {
       const {
         balanceSheet,
-        collateral,
-        collateralPriceFeed,
+        collaterals,
+        collateralPriceFeeds,
         fintroller,
         oracle,
         redemptionPool,
@@ -16,8 +16,8 @@ export function integrationTestFyToken(): void {
         fyToken,
       } = await this.loadFixture(integrationFixture);
       this.contracts.balanceSheet = balanceSheet;
-      this.contracts.collateral = collateral;
-      this.contracts.collateralPriceFeed = collateralPriceFeed;
+      this.contracts.collaterals = collaterals;
+      this.contracts.collateralPriceFeeds = collateralPriceFeeds;
       this.contracts.fintroller = fintroller;
       this.contracts.oracle = oracle;
       this.contracts.redemptionPool = redemptionPool;

@@ -37,10 +37,44 @@ export async function deployCollateral(deployer: Signer): Promise<Erc20Mintable>
   return collateral;
 }
 
+export async function deployCollateralABC(deployer: Signer): Promise<Erc20Mintable> {
+  const erc20MintableArtifact: Artifact = await hre.artifacts.readArtifact("Erc20Mintable");
+  const collateral: Erc20Mintable = <Erc20Mintable>(
+    await deployContract(deployer, erc20MintableArtifact, ["Wrapped ABC", "WABC", BigNumber.from(18)], overrideOptions)
+  );
+  return collateral;
+}
+
+export async function deployCollateralXYZ(deployer: Signer): Promise<Erc20Mintable> {
+  const erc20MintableArtifact: Artifact = await hre.artifacts.readArtifact("Erc20Mintable");
+  const collateral: Erc20Mintable = <Erc20Mintable>(
+    await deployContract(deployer, erc20MintableArtifact, ["Wrapped XYZ", "XYZ", BigNumber.from(18)], overrideOptions)
+  );
+  return collateral;
+}
+
 export async function deployCollateralPriceFeed(deployer: Signer): Promise<SimplePriceFeed> {
   const simplePriceFeedArtifact: Artifact = await hre.artifacts.readArtifact("SimplePriceFeed");
   const collateralPriceFeed: SimplePriceFeed = <SimplePriceFeed>(
     await deployContract(deployer, simplePriceFeedArtifact, ["WETH/USD"], overrideOptions)
+  );
+  await collateralPriceFeed.setPrice(prices.oneHundredDollars);
+  return collateralPriceFeed;
+}
+
+export async function deployCollateralABCPriceFeed(deployer: Signer): Promise<SimplePriceFeed> {
+  const simplePriceFeedArtifact: Artifact = await hre.artifacts.readArtifact("SimplePriceFeed");
+  const collateralPriceFeed: SimplePriceFeed = <SimplePriceFeed>(
+    await deployContract(deployer, simplePriceFeedArtifact, ["WABC/USD"], overrideOptions)
+  );
+  await collateralPriceFeed.setPrice(prices.oneHundredDollars);
+  return collateralPriceFeed;
+}
+
+export async function deployCollateralXYZPriceFeed(deployer: Signer): Promise<SimplePriceFeed> {
+  const simplePriceFeedArtifact: Artifact = await hre.artifacts.readArtifact("SimplePriceFeed");
+  const collateralPriceFeed: SimplePriceFeed = <SimplePriceFeed>(
+    await deployContract(deployer, simplePriceFeedArtifact, ["WXYZUSD"], overrideOptions)
   );
   await collateralPriceFeed.setPrice(prices.oneHundredDollars);
   return collateralPriceFeed;

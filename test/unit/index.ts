@@ -8,8 +8,8 @@ import { unitTestRedemptionPool } from "./redemptionPool/RedemptionPool";
 
 baseContext("Unit Tests", function () {
   unitTestBalanceSheet();
-  // unitTestChainlinkOperator();
-  // unitTestFintroller();
-  // unitTestFyToken(); OK
-  // unitTestRedemptionPool(); OK
+  unitTestChainlinkOperator();
+  unitTestFintroller();
+  unitTestFyToken();
+  unitTestRedemptionPool();
 });

@@ -32,6 +32,11 @@ export async function deployStubCollateral(deployer: Signer): Promise<MockContra
   return collateral;
 }
 
+export async function deployStubCollateralXYZ(deployer: Signer): Promise<MockContract> {
+  const collateral: MockContract = await deployStubErc20(deployer, "XYZ", "XYZ", BigNumber.from(18));
+  return collateral;
+}
+
 export async function deployStubCollateralPriceFeed(deployer: Signer): Promise<MockContract> {
   const simplePriceFeedArtifact: Artifact = await hre.artifacts.readArtifact("SimplePriceFeed");
   const collateralPriceFeed: MockContract = await deployStubContract(deployer, simplePriceFeedArtifact.abi);

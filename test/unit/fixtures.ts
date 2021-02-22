@@ -24,6 +24,7 @@ import {
   deployStubRedemptionPool,
   deployStubFyToken,
   deployStubUnderlying,
+  deployStubCollateralXYZ,
 } from "./stubs";
 import { fyTokenConstants } from "../../helpers/constants";
 
@@ -61,17 +62,25 @@ export async function unitFixtureBalanceSheet(signers: Signer[]): Promise<UnitFi
 }
 
 type UnitFixtureChainlinkOperatorReturnType = {
-  collateral: MockContract;
-  collateralPriceFeed: MockContract;
+  collaterals: MockContract[];
+  collateralPriceFeeds: MockContract[];
   oracle: ChainlinkOperator;
 };
 
 export async function unitFixtureChainlinkOperator(signers: Signer[]): Promise<UnitFixtureChainlinkOperatorReturnType> {
   const deployer: Signer = signers[0];
-  const collateral: MockContract = await deployStubCollateral(deployer);
-  const collateralPriceFeed: MockContract = await deployStubCollateralPriceFeed(deployer);
+
+  const collateralABC: MockContract = await deployStubCollateral(deployer);
+  const collateralXYZ: MockContract = await deployStubCollateralXYZ(deployer);
+  const collaterals = [collateralABC, collateralXYZ];
+
+  const collateralABCPriceFeed: MockContract = await deployStubCollateralPriceFeed(deployer);
+  const collateralXYZPriceFeed: MockContract = await deployStubCollateralPriceFeed(deployer);
+
+  const collateralPriceFeeds = [collateralABCPriceFeed, collateralXYZPriceFeed];
+
   const oracle: ChainlinkOperator = await deployChainlinkOperator(deployer);
-  return { collateral, collateralPriceFeed, oracle };
+  return { collaterals, collateralPriceFeeds, oracle };
 }
 
 type UnitFixtureFintrollerReturnType = {
