@@ -145,6 +145,46 @@ export default function shouldBehaveLikeDepositCollateral(): void {
                 .withArgs(this.stubs.fyToken.address, this.accounts.borrower, this.stubs.collaterals[0].address, collateralAmount);
             });
           });
+
+          describe("when the collateral is not allowed", function () {
+            beforeEach(async function () {
+              for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+                await this.stubs.fyToken.mock.getCollaterals.returns([]);
+              }
+            });
+
+            it('reverts', async function () {
+              await expect(
+                this.contracts.balanceSheet
+                  .connect(this.signers.borrower)
+                  .depositCollateral(this.stubs.fyToken.address, this.stubs.collaterals[0].address, collateralAmount),
+              )
+                .to.revertedWith('ERR_DEPOSIT_COLLATERAL_UNAUTHORIZED_COLLATERAL');
+            });
+          });
+
+          describe("when a different collateral has already been deposited", function () {
+            beforeEach(async function () {
+              for (let i = 0; i < this.stubs.collaterals.length; i += 1) {
+                await this.stubs.collaterals[i].mock.transferFrom
+                  .withArgs(this.accounts.borrower, this.contracts.balanceSheet.address, collateralAmount)
+                  .returns(true);
+              }
+            });
+
+            it('reverts', async function () {
+              await this.contracts.balanceSheet
+                .connect(this.signers.borrower)
+                .depositCollateral(this.stubs.fyToken.address, this.stubs.collaterals[0].address, collateralAmount),
+
+              await expect(
+                this.contracts.balanceSheet
+                  .connect(this.signers.borrower)
+                  .depositCollateral(this.stubs.fyToken.address, this.stubs.collaterals[1].address, collateralAmount),
+              )
+                .to.revertedWith('ERR_DEPOSIT_COLLATERAL_WRONG_COLLATERAL');
+            });
+          });
         });
       });
     });
