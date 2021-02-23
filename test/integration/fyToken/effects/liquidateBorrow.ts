@@ -35,7 +35,10 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
         .setBondDebtCeiling(this.contracts.fyToken.address, tokenAmounts.oneHundredThousand);
 
       /* Set the liquidation incentive to 110%. */
-      await this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(percentages.oneHundredAndTen);
+      await this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(
+        this.contracts.collaterals[0].address,
+        percentages.oneHundredAndTen,
+      );
 
       /* Mint 10 WETH and approve the Balance Sheet to spend it all. */
       await this.contracts.collaterals[0].mint(this.accounts.borrower, collateralAmount);
@@ -183,7 +186,10 @@ export default function shouldBehaveLikeLiquidateBorrow(): void {
         .setBondDebtCeiling(this.contracts.fyToken.address, tokenAmounts.oneHundredThousand);
 
       /* Set the liquidation incentive to 110%. */
-      await this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(percentages.oneHundredAndTen);
+      await this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(
+        this.contracts.collaterals[0].address,
+        percentages.oneHundredAndTen,
+      );
 
       /* Mint 10 WETH and approve the Balance Sheet to spend it all. */
       await this.contracts.collaterals[1].mint(this.accounts.borrower, collateralAmount);

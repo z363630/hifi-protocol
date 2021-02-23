@@ -84,7 +84,7 @@ contract BalanceSheet is
         require(repayAmount > 0, "ERR_GET_CLUTCHABLE_COLLATERAL_ZERO");
 
         /* When the liquidation incentive is zero, the end result would be zero anyways. */
-        vars.liquidationIncentiveMantissa = fintroller.liquidationIncentiveMantissa();
+        vars.liquidationIncentiveMantissa = fintroller.liquidationIncentiveMantissas(collateral);
         if (vars.liquidationIncentiveMantissa == 0) {
             return 0;
         }

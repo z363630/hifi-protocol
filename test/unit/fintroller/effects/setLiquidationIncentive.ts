@@ -17,7 +17,10 @@ export default function shouldBehaveLikeSetLiquidationIncentive(): void {
   describe("when the caller is not the admin", function () {
     it("reverts", async function () {
       await expect(
-        this.contracts.fintroller.connect(this.signers.raider).setLiquidationIncentive(newLiquidationIncentiveMantissa),
+        this.contracts.fintroller.connect(this.signers.raider).setLiquidationIncentive(
+          this.stubs.collaterals[0].address,
+          newLiquidationIncentiveMantissa,
+        ),
       ).to.be.revertedWith(AdminErrors.NotAdmin);
     });
   });
@@ -27,7 +30,10 @@ export default function shouldBehaveLikeSetLiquidationIncentive(): void {
       describe("when the liquidation ratio is zero", function () {
         it("reverts", async function () {
           await expect(
-            this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(Zero),
+            this.contracts.fintroller.connect(this.signers.admin).setLiquidationIncentive(
+              this.stubs.collaterals[0].address,
+              Zero,
+            ),
           ).to.be.revertedWith(FintrollerErrors.SetLiquidationIncentiveLowerBound);
         });
       });
@@ -37,7 +43,10 @@ export default function shouldBehaveLikeSetLiquidationIncentive(): void {
           await expect(
             this.contracts.fintroller
               .connect(this.signers.admin)
-              .setLiquidationIncentive(overflowLiquidationIncentiveMantissa),
+              .setLiquidationIncentive(
+                this.stubs.collaterals[0].address,
+                overflowLiquidationIncentiveMantissa,
+              ),
           ).to.be.revertedWith(FintrollerErrors.SetLiquidationIncentiveUpperBound);
         });
       });
@@ -47,7 +56,10 @@ export default function shouldBehaveLikeSetLiquidationIncentive(): void {
           await expect(
             this.contracts.fintroller
               .connect(this.signers.admin)
-              .setLiquidationIncentive(underflowLiquidationIncentiveMantissa),
+              .setLiquidationIncentive(
+                this.stubs.collaterals[0].address,
+                underflowLiquidationIncentiveMantissa,
+              ),
           ).to.be.revertedWith(FintrollerErrors.SetLiquidationIncentiveLowerBound);
         });
       });
@@ -57,8 +69,11 @@ export default function shouldBehaveLikeSetLiquidationIncentive(): void {
       it("sets the new liquidation incentive", async function () {
         await this.contracts.fintroller
           .connect(this.signers.admin)
-          .setLiquidationIncentive(newLiquidationIncentiveMantissa);
-        const liquidationIncentiveMantissa: BigNumber = await this.contracts.fintroller.liquidationIncentiveMantissa();
+          .setLiquidationIncentive(
+            this.stubs.collaterals[0].address,
+            newLiquidationIncentiveMantissa,
+          );
+        const liquidationIncentiveMantissa: BigNumber = await this.contracts.fintroller.liquidationIncentiveMantissas(this.stubs.collaterals[0].address);
         expect(liquidationIncentiveMantissa).to.equal(newLiquidationIncentiveMantissa);
       });
 
@@ -67,10 +82,13 @@ export default function shouldBehaveLikeSetLiquidationIncentive(): void {
         await expect(
           this.contracts.fintroller
             .connect(this.signers.admin)
-            .setLiquidationIncentive(newLiquidationIncentiveMantissa),
+            .setLiquidationIncentive(
+              this.stubs.collaterals[0].address,
+              newLiquidationIncentiveMantissa,
+            ),
         )
           .to.emit(this.contracts.fintroller, "SetLiquidationIncentive")
-          .withArgs(this.accounts.admin, defaultLiquidationIncentiveMantissa, newLiquidationIncentiveMantissa);
+          .withArgs(this.accounts.admin, this.stubs.collaterals[0].address, BigNumber.from(0), newLiquidationIncentiveMantissa);
       });
     });
   });

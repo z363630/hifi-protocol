@@ -5,7 +5,7 @@ import { percentages } from "../../../../helpers/constants";
 
 export default function shouldBehaveLikeLiquidationIncentiveMantissaGetter(): void {
   it("retrieves the default value", async function () {
-    const liquidationIncentiveMantissa: BigNumber = await this.contracts.fintroller.liquidationIncentiveMantissa();
+    const liquidationIncentiveMantissa: BigNumber = await this.contracts.fintroller.defaultLiquidationIncentiveMantissa();
     expect(liquidationIncentiveMantissa).to.equal(percentages.oneHundredAndTen);
   });
 }

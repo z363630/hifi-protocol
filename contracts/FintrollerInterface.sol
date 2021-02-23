@@ -61,7 +61,7 @@ abstract contract FintrollerInterface is FintrollerStorage {
 
     function setLiquidateBorrowAllowed(FyTokenInterface fyToken, bool state) external virtual returns (bool);
 
-    function setLiquidationIncentive(uint256 newLiquidationIncentiveMantissa) external virtual returns (bool);
+    function setLiquidationIncentive(address collateral, uint256 newLiquidationIncentiveMantissa) external virtual returns (bool);
 
     function setOracle(ChainlinkOperatorInterface newOracle) external virtual returns (bool);
 
@@ -98,6 +98,7 @@ abstract contract FintrollerInterface is FintrollerStorage {
 
     event SetLiquidationIncentive(
         address indexed admin,
+        address collateral,
         uint256 oldLiquidationIncentive,
         uint256 newLiquidationIncentive
     );

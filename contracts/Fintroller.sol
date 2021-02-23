@@ -20,7 +20,7 @@ contract Fintroller is
     /* solhint-disable-next-line no-empty-blocks */
     constructor() Admin() {
         /* Set a default value of 110% for the liquidation incentive. */
-        liquidationIncentiveMantissa = 1.1e18;
+        defaultLiquidationIncentiveMantissa = 1.1e18;
     }
 
     /**
@@ -181,6 +181,15 @@ contract Fintroller is
             isRepayBorrowAllowed: true,
             isSupplyUnderlyingAllowed: true
         });
+
+        Erc20Interface[] memory collaterals = fyToken.getCollaterals();
+
+        for (uint256 i = 0; i < collaterals.length; i += 1) {
+            if (liquidationIncentiveMantissas[address(collaterals[i])] == 0) {
+                liquidationIncentiveMantissas[address(collaterals[i])] = defaultLiquidationIncentiveMantissa;
+            }
+        }
+
         emit ListBond(admin, fyToken);
         return true;
     }
@@ -350,7 +359,7 @@ contract Fintroller is
 
     /**
      * @notice Sets a new value for the liquidation incentive, which is applicable
-     * to all listed bonds.
+     * for a specific collateral.
      *
      * @dev Emits a {SetLiquidationIncentive} event.
      *
@@ -360,10 +369,14 @@ contract Fintroller is
      * - The new liquidation incentive cannot be higher than the maximum liquidation incentive.
      * - The new liquidation incentive cannot be lower than the minimum liquidation incentive.
 
+     * @param collateral The address of the collateral.
      * @param newLiquidationIncentiveMantissa The new liquidation incentive as a mantissa.
      * @return bool true = success, otherwise it reverts.
      */
-    function setLiquidationIncentive(uint256 newLiquidationIncentiveMantissa)
+    function setLiquidationIncentive(
+        address collateral,
+        uint256 newLiquidationIncentiveMantissa
+    )
         external
         override
         onlyAdmin
@@ -380,10 +393,15 @@ contract Fintroller is
         );
 
         /* Effects: update storage. */
-        uint256 oldLiquidationIncentiveMantissa = liquidationIncentiveMantissa;
-        liquidationIncentiveMantissa = newLiquidationIncentiveMantissa;
+        uint256 oldLiquidationIncentiveMantissa = liquidationIncentiveMantissas[collateral];
+        liquidationIncentiveMantissas[collateral] = newLiquidationIncentiveMantissa;
 
-        emit SetLiquidationIncentive(admin, oldLiquidationIncentiveMantissa, newLiquidationIncentiveMantissa);
+        emit SetLiquidationIncentive(
+            admin,
+            collateral,
+            oldLiquidationIncentiveMantissa,
+            newLiquidationIncentiveMantissa
+        );
 
         return true;
     }

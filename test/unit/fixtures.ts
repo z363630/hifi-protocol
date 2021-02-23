@@ -87,14 +87,22 @@ type UnitFixtureFintrollerReturnType = {
   fintroller: Fintroller;
   fyToken: MockContract;
   oracle: MockContract;
+  collaterals: MockContract[];
 };
 
 export async function unitFixtureFintroller(signers: Signer[]): Promise<UnitFixtureFintrollerReturnType> {
   const deployer: Signer = signers[0];
   const oracle: MockContract = await deployStubChainlinkOperator(deployer);
   const fyToken: MockContract = await deployStubFyToken(deployer);
+
+  const collateralABC: MockContract = await deployStubCollateral(deployer);
+  const collateralXYZ: MockContract = await deployStubCollateralXYZ(deployer);
+  const collaterals = [collateralABC, collateralXYZ];
+
+  await fyToken.mock.getCollaterals.returns(collaterals.map((collateral) => collateral.address));
+
   const fintroller: Fintroller = await deployFintroller(deployer);
-  return { fintroller, fyToken, oracle };
+  return { fintroller, fyToken, collaterals, oracle };
 }
 
 type UnitFixtureFyTokenReturnType = {

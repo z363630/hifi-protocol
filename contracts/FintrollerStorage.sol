@@ -36,7 +36,12 @@ abstract contract FintrollerStorage is Exponential {
     /**
      * @notice Multiplier representing the discount on collateral that a liquidator receives.
      */
-    uint256 public liquidationIncentiveMantissa;
+    mapping (address => uint256) public liquidationIncentiveMantissas;
+
+    /**
+     * @notice The default value for the liquidation incentive.
+     */
+    uint256 public defaultLiquidationIncentiveMantissa;
 
     /**
      * @dev The threshold below which the collateralization ratio cannot be set, equivalent to 100%.
