@@ -22,6 +22,20 @@ import shouldBehaveLikeIsCollateralListed from "./view/isCollateralListed";
 import shouldBehaveLikeMaxBonds from "./view/maxBonds";
 
 export function shouldBehaveLikeFintroller(): void {
+  it("works", async function () {
+    const fintrollerProxyAddress: string = this.contracts.fintroller.address;
+    console.log({ fintrollerProxyAddress });
+
+    // const fintrollerImplementationAddress: string = await this.contracts.fintroller
+    //   .connect(this.signers.admin)
+    //   .implementation();
+    // console.log({ fintrollerImplementationAddress });
+
+    const fintrollerInterface = this.contracts.fintroller.interface;
+    console.log({ fintrollerInterface });
+  });
+}
+export function shouldBehaveLikeFintrollerV2(): void {
   describe("View Functions", function () {
     describe("getBond", function () {
       shouldBehaveLikeGetBond();
